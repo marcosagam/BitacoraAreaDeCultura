@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Tu configuración aquí
-};
+  reactStrictMode: true,
+  swcMinify: true,
+  images: {
+    domains: ["firebasestorage.googleapis.com"],
+  },
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

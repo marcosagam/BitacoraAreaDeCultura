@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { toast } from "sonner"
-import BitacoraForm from "@/components/bitacora-form"
-import BitacoraTable from "@/components/bitacora-table"
-import BitacoraStats from "@/components/bitacora-stats"
-import BitacoraFilter from "@/components/bitacora-filter"
-import type { BitacoraEntry } from "@/types/bitacora"
+import BitacoraForm from "@/src/components/bitacora-form"
+import BitacoraTable from "@/src/components/bitacora-table"
+import BitacoraStats from "@/src/components/bitacora-stats"
+import BitacoraFilter from "@/src/components/bitacora-filter"
+import type { BitacoraEntry } from "@/src/types/bitacora"
 import {
   getAllEntries,
   addEntry as addEntryToFirebase,
@@ -16,7 +16,7 @@ import {
   getFilteredEntries,
   getUniqueResponsables,
   getUniqueCategorias,
-} from "@/firebase/bitacora-service"
+} from "@/src/firebase/bitacora-service"
 
 export default function BitacoraPage() {
   const [entries, setEntries] = useState<BitacoraEntry[]>([])

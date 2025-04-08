@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore"
 import { toast } from "sonner"
 import { db } from "./config"
-import type { BitacoraEntry } from "@/types/bitacora"
+import type { BitacoraEntry } from "@/src/types/bitacora"
 
 // Colección de Firestore
 const COLLECTION_NAME = "bitacora_entries"

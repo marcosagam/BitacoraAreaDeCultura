@@ -2,10 +2,10 @@
 
 import { format } from "date-fns"
 import { CheckCircle, XCircle } from "lucide-react"
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import type { BitacoraEntry } from "@/types/bitacora"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
+import { Badge } from "../components/ui/badge"
+import { Button } from "../components/ui/button"
+import type { BitacoraEntry } from "../types/bitacora"
 
 interface BitacoraTableProps {
   entries: BitacoraEntry[]

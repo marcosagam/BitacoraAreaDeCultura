@@ -3,14 +3,14 @@
 import { useMemo, useState, useEffect } from "react"
 import { format, startOfWeek } from "date-fns"
 import { es } from "date-fns/locale"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Button } from "@/src/components/ui/button"
 import { toast } from "sonner"
-import type { BitacoraEntry } from "@/types/bitacora"
+import type { BitacoraEntry } from "@/src/types/bitacora"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import BitacoraTable from "@/components/bitacora-table"
-import { getEntriesByTimeFilter } from "@/firebase/bitacora-service"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
+import BitacoraTable from "@/src/components/bitacora-table"
+import { getEntriesByTimeFilter } from "@/src/firebase/bitacora-service"
 
 interface BitacoraStatsProps {
   entries: BitacoraEntry[]

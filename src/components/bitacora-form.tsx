@@ -2,23 +2,19 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { format, parse } from "date-fns"
 
 import { Button } from "../components/ui/button"
-import { Calendar } from "../components/ui/calendar"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover"
 import type { BitacoraEntry } from "../types/bitacora"
-import { cn } from "../lib/utils"
+import { useEffect } from "react"
 
 const formSchema = z.object({
-  fecha: z.date({
-    required_error: "La fecha es requerida",
-  }),
+  fecha: z.string().min(1, { message: "La fecha es requerida" }),
+  fechaEntrega: z.string().min(1, { message: "La fecha de entrega es requerida" }),
   titulo: z.string().min(2, {
     message: "El título debe tener al menos 2 caracteres",
   }),
@@ -31,32 +27,84 @@ const formSchema = z.object({
   categoria: z.string({
     required_error: "Por favor seleccione una categoría",
   }),
+  completada: z.boolean().optional(),
 })
 
 interface BitacoraFormProps {
   onSubmit: (data: BitacoraEntry) => void
+  initialData?: BitacoraEntry
+  isEditing?: boolean
 }
 
-export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
+export default function BitacoraForm({ onSubmit, initialData, isEditing = false }: BitacoraFormProps) {
+  const today = new Date()
+  const nextWeek = new Date(today)
+  nextWeek.setDate(today.getDate() + 7)
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fecha: new Date(),
+      fecha: format(today, "yyyy-MM-dd"),
+      fechaEntrega: format(nextWeek, "yyyy-MM-dd"),
       titulo: "",
       descripcion: "",
       responsable: "",
       categoria: "",
+      completada: false,
     },
   })
 
+  // Cargar datos iniciales si estamos editando
+  useEffect(() => {
+    if (initialData && isEditing) {
+      form.reset({
+        fecha: format(new Date(initialData.fecha), "yyyy-MM-dd"),
+        fechaEntrega: format(new Date(initialData.fechaEntrega), "yyyy-MM-dd"),
+        titulo: initialData.titulo,
+        descripcion: initialData.descripcion,
+        responsable: initialData.responsable,
+        categoria: initialData.categoria,
+        completada: initialData.completada,
+      })
+    }
+  }, [initialData, isEditing, form])
+
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit({
-      id: "",
-      ...values,
-      fechaCreacion: new Date(),
-      completada: false,
-    })
-    form.reset()
+    // Convertir las fechas de string a Date
+    const fechaDate = parse(values.fecha, "yyyy-MM-dd", new Date())
+    const fechaEntregaDate = parse(values.fechaEntrega, "yyyy-MM-dd", new Date())
+
+    if (isEditing && initialData) {
+      onSubmit({
+        id: initialData.id,
+        ...values,
+        fecha: fechaDate,
+        fechaEntrega: fechaEntregaDate,
+        fechaCreacion: initialData.fechaCreacion,
+        completada: values.completada ?? initialData.completada,
+      } as BitacoraEntry)
+    } else {
+      onSubmit({
+        id: "",
+        ...values,
+        fecha: fechaDate,
+        fechaEntrega: fechaEntregaDate,
+        fechaCreacion: new Date(),
+        completada: values.completada ?? false,
+      } as BitacoraEntry)
+    }
+
+    if (!isEditing) {
+      form.reset({
+        fecha: format(today, "yyyy-MM-dd"),
+        fechaEntrega: format(nextWeek, "yyyy-MM-dd"),
+        titulo: "",
+        descripcion: "",
+        responsable: "",
+        categoria: "",
+        completada: false,
+      })
+    }
   }
 
   return (
@@ -67,24 +115,13 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
             control={form.control}
             name="fecha"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fecha del evento</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>Seleccione una fecha</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
+              <FormItem>
+                <FormLabel>
+                  Fecha del evento <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -92,11 +129,31 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
 
           <FormField
             control={form.control}
+            name="fechaEntrega"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Fecha de entrega <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
             name="categoria"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel>
+                  Categoría <span className="text-red-500">*</span>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione una categoría" />
@@ -127,6 +184,45 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="responsable"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Responsable <span className="text-red-500">*</span>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un responsable" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="ALEJANDRO GOMEZ COBO">ALEJANDRO GOMEZ COBO</SelectItem>
+                    <SelectItem value="ANGIE NATALIA SANTANA ROJAS">ANGIE NATALIA SANTANA ROJAS</SelectItem>
+                    <SelectItem value="ASHLY CAICEDO">ASHLY CAICEDO</SelectItem>
+                    <SelectItem value="DIANA MARULANDA">DIANA MARULANDA</SelectItem>
+                    <SelectItem value="EDUARD LUBO URBANO">EDUARD LUBO URBANO</SelectItem>
+                    <SelectItem value="EDWIN PORTELA">EDWIN PORTELA</SelectItem>
+                    <SelectItem value="FRANCISCO EMERSON CASTAÑEDA RAMIREZ">
+                      FRANCISCO EMERSON CASTAÑEDA RAMIREZ
+                    </SelectItem>
+                    <SelectItem value="ISABELA OBREGON">ISABELA OBREGON</SelectItem>
+                    <SelectItem value="IVÁN FERNANDO VASQUEZ MANCILLA">IVÁN FERNANDO VASQUEZ MANCILLA</SelectItem>
+                    <SelectItem value="JUAN DAVID TABARES">JUAN DAVID TABARES</SelectItem>
+                    <SelectItem value="JUAN PABLO CRUZ">JUAN PABLO CRUZ</SelectItem>
+                    <SelectItem value="KERELYN GRUTIERREZ VENECIA">KERELYN GRUTIERREZ VENECIA</SelectItem>
+                    <SelectItem value="LUIS SANTIAGO AZA JARAMILLO">LUIS SANTIAGO AZA JARAMILLO</SelectItem>
+                    <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
+                    <SelectItem value="SANTIAGO FERNANDO NACED ROJAS">SANTIAGO FERNANDO NACED ROJAS</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <FormField
@@ -134,7 +230,9 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
           name="titulo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título</FormLabel>
+              <FormLabel>
+                Título <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
                 <Input placeholder="Título del registro" {...field} />
               </FormControl>
@@ -148,7 +246,9 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
           name="descripcion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descripción</FormLabel>
+              <FormLabel>
+                Descripción <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Describa los detalles del evento o actividad"
@@ -161,48 +261,27 @@ export default function BitacoraForm({ onSubmit }: BitacoraFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="responsable"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Responsable</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        {isEditing && (
+          <FormField
+            control={form.control}
+            name="completada"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un responsable" />
-                  </SelectTrigger>
+                  <input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4 mt-1" />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="ALEJANDRO GOMEZ COBO">ALEJANDRO GOMEZ COBO</SelectItem>
-                  <SelectItem value="ANGIE NATALIA SANTANA ROJAS">ANGIE NATALIA SANTANA ROJAS</SelectItem>
-                  <SelectItem value="ASHLY CAICEDO">ASHLY CAICEDO</SelectItem>
-                  <SelectItem value="DIANA MARULANDA">DIANA MARULANDA</SelectItem>
-                  <SelectItem value="EDUARD LUBO URBANO">EDUARD LUBO URBANO</SelectItem>
-                  <SelectItem value="EDWIN PORTELA">EDWIN PORTELA</SelectItem>
-                  <SelectItem value="FRANCISCO EMERSON CASTAÑEDA RAMIREZ">
-                    FRANCISCO EMERSON CASTAÑEDA RAMIREZ
-                  </SelectItem>
-                  <SelectItem value="ISABELA OBREGON">ISABELA OBREGON</SelectItem>
-                  <SelectItem value="IVÁN FERNANDO VASQUEZ MANCILLA">IVÁN FERNANDO VASQUEZ MANCILLA</SelectItem>
-                  <SelectItem value="JUAN DAVID TABARES">JUAN DAVID TABARES</SelectItem>
-                  <SelectItem value="JUAN PABLO CRUZ">JUAN PABLO CRUZ</SelectItem>
-                  <SelectItem value="KERELYN GRUTIERREZ VENECIA">KERELYN GRUTIERREZ VENECIA</SelectItem>
-                  <SelectItem value="LUIS SANTIAGO AZA JARAMILLO">LUIS SANTIAGO AZA JARAMILLO</SelectItem>
-                  <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
-                  <SelectItem value="SANTIAGO FERNANDO NACED ROJAS">SANTIAGO FERNANDO NACED ROJAS</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Marcar como completada</FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button type="submit" className="w-full">
-          Guardar Registro
+          {isEditing ? "Actualizar Registro" : "Guardar Registro"}
         </Button>
       </form>
     </Form>
   )
 }
-

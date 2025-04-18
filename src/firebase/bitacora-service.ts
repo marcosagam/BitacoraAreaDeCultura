@@ -12,38 +12,11 @@ import {
 } from "firebase/firestore"
 import { toast } from "sonner"
 import { db } from "./config"
-import type { BitacoraEntry } from "@/src/types/bitacora"
+import type { BitacoraEntry } from "../types/bitacora"
+import { convertFromFirestore, convertToFirestore } from "../utils/firebase-helpers"
 
 // Colección de Firestore
 const COLLECTION_NAME = "bitacora_entries"
-
-// Convertir datos de Firestore a nuestro tipo BitacoraEntry
-const convertFromFirestore = (doc: any): BitacoraEntry => {
-  const data = doc.data()
-  return {
-    id: doc.id,
-    titulo: data.titulo,
-    descripcion: data.descripcion,
-    responsable: data.responsable,
-    categoria: data.categoria,
-    fecha: data.fecha.toDate(),
-    fechaCreacion: data.fechaCreacion.toDate(),
-    completada: data.completada,
-  }
-}
-
-// Convertir nuestro tipo BitacoraEntry a formato para Firestore
-const convertToFirestore = (entry: BitacoraEntry) => {
-  return {
-    titulo: entry.titulo,
-    descripcion: entry.descripcion,
-    responsable: entry.responsable,
-    categoria: entry.categoria,
-    fecha: Timestamp.fromDate(new Date(entry.fecha)),
-    fechaCreacion: Timestamp.fromDate(new Date(entry.fechaCreacion)),
-    completada: entry.completada,
-  }
-}
 
 // Obtener todas las entradas
 export const getAllEntries = async (): Promise<BitacoraEntry[]> => {
@@ -58,10 +31,10 @@ export const getAllEntries = async (): Promise<BitacoraEntry[]> => {
   }
 }
 
-// Filtrar entradas por responsable y/o categoría
+// Filtrar entradas por responsable y/o estado
 export const getFilteredEntries = async (
   responsable: string | null,
-  categoria: string | null,
+  estado: string | null,
 ): Promise<BitacoraEntry[]> => {
   try {
     const constraints: QueryConstraint[] = []
@@ -71,8 +44,10 @@ export const getFilteredEntries = async (
       constraints.push(where("responsable", "==", responsable))
     }
 
-    if (categoria) {
-      constraints.push(where("categoria", "==", categoria))
+    if (estado) {
+      // Si el estado es "completada", buscamos completada=true
+      // Si el estado es "pendiente", buscamos completada=false
+      constraints.push(where("completada", "==", estado === "completada"))
     }
 
     // Siempre ordenar por fecha de creación descendente
@@ -151,6 +126,19 @@ export const toggleEntryComplete = async (id: string, completada: boolean): Prom
   } catch (error) {
     console.error("Error al actualizar entrada:", error)
     toast.error("No se pudo actualizar el estado de la tarea")
+    throw error
+  }
+}
+
+// Actualizar una entrada completa
+export const updateEntry = async (entry: BitacoraEntry): Promise<void> => {
+  try {
+    const entryRef = doc(db, COLLECTION_NAME, entry.id)
+    await updateDoc(entryRef, convertToFirestore(entry))
+    toast.success("Registro actualizado correctamente")
+  } catch (error) {
+    console.error("Error al actualizar entrada:", error)
+    toast.error("No se pudo actualizar el registro")
     throw error
   }
 }
@@ -243,4 +231,3 @@ export const getUniqueCategorias = async (): Promise<Record<string, string>> => 
     }
   }
 }
-

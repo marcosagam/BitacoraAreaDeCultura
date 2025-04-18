@@ -8,22 +8,23 @@ import { Search, X } from "lucide-react"
 
 interface BitacoraFilterProps {
   responsables: string[]
-  categorias: Record<string, string>
-  onFilter: (responsable: string | null, categoria: string | null) => void
+  onFilter: (responsable: string | null, estado: string | null, vencidas: boolean) => void
 }
 
-export default function BitacoraFilter({ responsables, categorias, onFilter }: BitacoraFilterProps) {
+export default function BitacoraFilter({ responsables, onFilter }: BitacoraFilterProps) {
   const [responsable, setResponsable] = useState<string | null>(null)
-  const [categoria, setCategoria] = useState<string | null>(null)
+  const [estado, setEstado] = useState<string | null>(null)
+  const [vencidas, setVencidas] = useState<boolean>(false)
 
   const handleFilter = () => {
-    onFilter(responsable, categoria)
+    onFilter(responsable, estado, vencidas)
   }
 
   const handleClear = () => {
     setResponsable(null)
-    setCategoria(null)
-    onFilter(null, null)
+    setEstado(null)
+    setVencidas(false)
+    onFilter(null, null, false)
   }
 
   return (
@@ -36,29 +37,48 @@ export default function BitacoraFilter({ responsables, categorias, onFilter }: B
               <SelectValue placeholder="Todos los responsables" />
             </SelectTrigger>
             <SelectContent>
-              {responsables.map((resp) => (
-                <SelectItem key={resp} value={resp}>
-                  {resp}
+              {responsables && responsables.length > 0 ? (
+                responsables.map((resp) => (
+                  <SelectItem key={resp} value={resp}>
+                    {resp}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>
+                  No hay responsables disponibles
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
 
         <div className="flex-1">
-          <label className="text-sm font-medium mb-1 block">Categoría</label>
-          <Select value={categoria || ""} onValueChange={(value) => setCategoria(value || null)}>
+          <label className="text-sm font-medium mb-1 block">Estado</label>
+          <Select value={estado || ""} onValueChange={(value) => setEstado(value || null)}>
             <SelectTrigger>
-              <SelectValue placeholder="Todas las categorías" />
+              <SelectValue placeholder="Todos los estados" />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(categorias).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
+              <SelectItem value="completada">Completada</SelectItem>
+              <SelectItem value="pendiente">Pendiente</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex-1">
+          <label className="text-sm font-medium mb-1 block">Vencidas</label>
+          <div className="flex items-center h-10 mt-1">
+            <input
+              type="checkbox"
+              id="vencidas"
+              checked={vencidas}
+              onChange={(e) => setVencidas(e.target.checked)}
+              className="h-4 w-4 mr-2"
+            />
+            <label htmlFor="vencidas" className="text-sm">
+              Mostrar solo tareas vencidas
+            </label>
+          </div>
         </div>
 
         <div className="flex items-end gap-2">
@@ -75,4 +95,3 @@ export default function BitacoraFilter({ responsables, categorias, onFilter }: B
     </Card>
   )
 }
-

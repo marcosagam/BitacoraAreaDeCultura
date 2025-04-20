@@ -79,6 +79,6 @@ body {
 
 
 .scrollable-dropdown {
-  max-height: 200px; /* ajusta la altura máxima */
+  max-height: 320px; /* ajusta la altura máxima */
   overflow-y: auto;
 }

@@ -244,7 +244,7 @@ export default function BitacoraPage() {
 
         {/* Diálogo de edición */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] bg-white dark:bg-gray-900">
             <DialogHeader>
               <DialogTitle>Editar Registro</DialogTitle>
             </DialogHeader>

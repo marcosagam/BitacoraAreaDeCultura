@@ -159,7 +159,7 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                       <SelectValue placeholder="Seleccione una categoría" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="scrollable-dropdown">
                     <SelectItem value="capacitacion">CAPACITACION</SelectItem>
                     <SelectItem value="convocatoria">CONVOCATORIA</SelectItem>
                     <SelectItem value="correo_electronico">CORREO ELECTRONICO</SelectItem>
@@ -199,7 +199,7 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                       <SelectValue placeholder="Seleccione un responsable" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="scrollable-dropdown">
                     <SelectItem value="ALEJANDRO GOMEZ COBO">ALEJANDRO GOMEZ COBO</SelectItem>
                     <SelectItem value="ANGIE NATALIA SANTANA ROJAS">ANGIE NATALIA SANTANA ROJAS</SelectItem>
                     <SelectItem value="ASHLY CAICEDO">ASHLY CAICEDO</SelectItem>

@@ -10,7 +10,7 @@ const firebaseConfig = {
   projectId: "bitacoraac-44f70",
   storageBucket: "bitacoraac-44f70.firebasestorage.app",
   messagingSenderId: "11870223323",
-  appId: "1:11870223323:web:775ea99e4039d228f085fe",
+  appId: "1:11870223323:web:775ea99e4039d228f085fe"
 }
 
 // Initialize Firebase

@@ -211,11 +211,13 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                     <SelectItem value="ISABELA OBREGON">ISABELA OBREGON</SelectItem>
                     <SelectItem value="IVÁN FERNANDO VASQUEZ MANCILLA">IVÁN FERNANDO VASQUEZ MANCILLA</SelectItem>
                     <SelectItem value="JUAN DAVID TABARES">JUAN DAVID TABARES</SelectItem>
+                    <SelectItem value="JUAN DAVID ARANGO QUINTERO">JUAN DAVID ARANGO QUINTERO</SelectItem>
                     <SelectItem value="JUAN PABLO CRUZ">JUAN PABLO CRUZ</SelectItem>
                     <SelectItem value="KERELYN GRUTIERREZ VENECIA">KERELYN GRUTIERREZ VENECIA</SelectItem>
                     <SelectItem value="LUIS SANTIAGO AZA JARAMILLO">LUIS SANTIAGO AZA JARAMILLO</SelectItem>
                     <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
-                    <SelectItem value="SANTIAGO FERNANDO NACED ROJAS">SANTIAGO FERNANDO NACED ROJAS</SelectItem>
+                    <SelectItem value="SANTIAGO FERNANDO NACED ROQUE">SANTIAGO FERNANDO NACED ROQUE</SelectItem>
+                    <SelectItem value="SARHAI YULITZA HURTADO AGUILAR">SARHAI YULITZA HURTADO AGUILAR</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

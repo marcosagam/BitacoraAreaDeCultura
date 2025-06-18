@@ -178,6 +178,7 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                     <SelectItem value="tareas_oficina">TAREAS GENERALES DE OFICINA</SelectItem>
                     <SelectItem value="uniformes">UNIFORMES</SelectItem>
                     <SelectItem value="ficha_tecnica">FICHA TECNICA</SelectItem>
+                    <SelectItem value="estudio_de_mercado">ESTUDIO DE MERCADO</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

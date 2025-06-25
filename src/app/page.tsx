@@ -8,8 +8,11 @@ import BitacoraForm from "../components/bitacora-form"
 import BitacoraTable from "../components/bitacora-table"
 import BitacoraStats from "../components/bitacora-stats"
 import BitacoraFilter from "../components/bitacora-filter"
+import AsistenciaForm from "../components/asistencia-form"
+import AsistenciaTable from "../components/asistencia-table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import type { BitacoraEntry } from "../types/bitacora"
+import type { AsistenciaEntry } from "../types/asistencia"
 import {
   getAllEntries,
   addEntry as addEntryToFirebase,
@@ -18,11 +21,14 @@ import {
   getUniqueResponsables,
   updateEntry,
 } from "../firebase/bitacora-service"
+import { getAllAsistencias, addAsistencia } from "../firebase/asistencia-service"
 
 export default function BitacoraPage() {
   const [entries, setEntries] = useState<BitacoraEntry[]>([])
   const [filteredEntries, setFilteredEntries] = useState<BitacoraEntry[]>([])
+  const [asistencias, setAsistencias] = useState<AsistenciaEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingAsistencias, setLoadingAsistencias] = useState(true)
   const [responsables, setResponsables] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("form")
   const [editingEntry, setEditingEntry] = useState<BitacoraEntry | null>(null)
@@ -49,6 +55,24 @@ export default function BitacoraPage() {
     fetchData()
   }, [])
 
+  // Cargar asistencias desde Firebase
+  useEffect(() => {
+    const fetchAsistencias = async () => {
+      try {
+        setLoadingAsistencias(true)
+        const data = await getAllAsistencias()
+        setAsistencias(data)
+      } catch (error) {
+        console.error("Error al cargar asistencias:", error)
+        toast.error("No se pudieron cargar las asistencias")
+      } finally {
+        setLoadingAsistencias(false)
+      }
+    }
+
+    fetchAsistencias()
+  }, [])
+
   const addEntry = async (entry: Omit<BitacoraEntry, "id">) => {
     try {
       const id = await addEntryToFirebase(entry)
@@ -71,6 +95,25 @@ export default function BitacoraPage() {
     } catch (error) {
       console.error("Error al añadir entrada:", error)
       toast.error("No se pudo añadir el registro")
+    }
+  }
+
+  const addAsistenciaEntry = async (entry: Omit<AsistenciaEntry, "id">) => {
+    try {
+      const id = await addAsistencia(entry)
+
+      const newEntry = {
+        ...entry,
+        id,
+      } as AsistenciaEntry
+
+      // Actualizar el estado local con la nueva entrada
+      setAsistencias((prevEntries) => [newEntry, ...prevEntries])
+
+      toast.success("Asistencia registrada correctamente")
+    } catch (error) {
+      console.error("Error al registrar asistencia:", error)
+      toast.error("No se pudo registrar la asistencia")
     }
   }
 
@@ -177,7 +220,7 @@ export default function BitacoraPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto py-6 px-2 flex flex-col min-h-screen">
-        <h1 className="text-3xl font-bold mb-6 text-center">Bitácora de Registros</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Sistema de Gestión</h1>
 
         <Tabs
           defaultValue="form"
@@ -185,10 +228,11 @@ export default function BitacoraPage() {
           onValueChange={setActiveTab}
           className="w-full flex-grow flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="form">Nuevo Registro</TabsTrigger>
             <TabsTrigger value="entries">Ver Registros</TabsTrigger>
             <TabsTrigger value="stats">Estadísticas</TabsTrigger>
+            <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
           </TabsList>
 
           <TabsContent value="form" className="flex-grow">
@@ -240,11 +284,41 @@ export default function BitacoraPage() {
               )}
             </Card>
           </TabsContent>
+
+          <TabsContent value="asistencia" className="flex-grow">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registrar Asistencia</CardTitle>
+                  <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AsistenciaForm onSubmit={addAsistenciaEntry} />
+                </CardContent>
+              </Card>
+
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>Registros de Asistencia</CardTitle>
+                  <CardDescription>Historial de asistencias registradas.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  {loadingAsistencias ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    <AsistenciaTable entries={asistencias} />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Diálogo de edición */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] bg-white dark:bg-gray-900">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Editar Registro</DialogTitle>
             </DialogHeader>

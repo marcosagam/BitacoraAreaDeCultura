@@ -73,8 +73,8 @@ export default function AsistenciaTable({ entries }: AsistenciaTableProps) {
                   <TableCell>{entry.hora}</TableCell>
                   <TableCell>{getTipoBadge(entry.tipo)}</TableCell>
                   <TableCell>
-                    <span className={entry.distancia <= 10 ? "text-green-600" : "text-red-600"}>
-                      {entry.distancia?.toFixed(1)}m
+                    <span className={(entry.distancia ?? 0) <= 10 ? "text-green-600" : "text-red-600"}>
+                      {entry.distancia?.toFixed(1) ?? "0.0"}m
                     </span>
                   </TableCell>
                   <TableCell className="text-xs">

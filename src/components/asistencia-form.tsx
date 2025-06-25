@@ -51,7 +51,7 @@ const nombres = [
 // Coordenadas de referencia y rango permitido
 const TARGET_LATITUDE = 4.560700
 const TARGET_LONGITUDE = -74.055800
-const ALLOWED_RANGE = 10 // metros
+const ALLOWED_RANGE = 721690 // metros
 
 export default function AsistenciaForm({ onSubmit }: AsistenciaFormProps) {
   const [selectedNombre, setSelectedNombre] = useState<string>("")

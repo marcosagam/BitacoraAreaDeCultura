@@ -5,14 +5,13 @@ import { getFirestore } from "firebase/firestore"
 // Tu configuración de Firebase
 // Reemplaza estos valores con los de tu proyecto de Firebase
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-}
+  apiKey: "AIzaSyA_tkqH9M-aBK-Rgv5WwkgAk1aU_Y6VpvE",
+  authDomain: "bitacoraac-44f70.firebaseapp.com",
+  projectId: "bitacoraac-44f70",
+  storageBucket: "bitacoraac-44f70.firebasestorage.app",
+  messagingSenderId: "11870223323",
+  appId: "1:11870223323:web:775ea99e4039d228f085fe"
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig)

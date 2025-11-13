@@ -219,6 +219,7 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                     <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
                     <SelectItem value="SANTIAGO FERNANDO NACED ROQUE">SANTIAGO FERNANDO NACED ROQUE</SelectItem>
                     <SelectItem value="ROBER ANDREY HERNANDEZ RAMOS">ROBER ANDREY HERNANDEZ RAMOS</SelectItem>
+                    <SelectItem value="LUIS FERNANDO MORALES OROZCO">LUIS FERNANDO MORALES OROZCO</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

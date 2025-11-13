@@ -44,6 +44,7 @@ const nombres = [
   "MARCOS AMILKAR MURILLO AGAMEZ",
   "SANTIAGO FERNANDO NACED ROQUE",
   "ROBER ANDREY HERNANDEZ RAMOS",
+  "LUIS FERNANDO MORALES OROZCO",
 ]
 
 // Coordenadas de referencia y rango permitido

@@ -9,7 +9,8 @@ import BitacoraTable from "../components/bitacora-table"
 import BitacoraStats from "../components/bitacora-stats"
 import BitacoraFilter from "../components/bitacora-filter"
 import AsistenciaForm from "../components/asistencia-form"
-import AsistenciaTable from "../components/asistencia-table"
+import AsistenciaStats from "../components/asistencia-stats"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import type { BitacoraEntry } from "../types/bitacora"
 import type { AsistenciaEntry } from "../types/asistencia"
@@ -33,6 +34,7 @@ export default function BitacoraPage() {
   const [activeTab, setActiveTab] = useState("form")
   const [editingEntry, setEditingEntry] = useState<BitacoraEntry | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedPerson, setSelectedPerson] = useState<string>("")
 
   // Cargar entradas desde Firebase al iniciar
   useEffect(() => {
@@ -293,22 +295,22 @@ export default function BitacoraPage() {
                   <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AsistenciaForm onSubmit={addAsistenciaEntry} />
+                  <AsistenciaForm onSubmit={addAsistenciaEntry} onNameChange={(name) => setSelectedPerson(name)} />
                 </CardContent>
               </Card>
 
               <Card className="flex flex-col">
                 <CardHeader>
-                  <CardTitle>Registros de Asistencia</CardTitle>
-                  <CardDescription>Historial de asistencias registradas.</CardDescription>
+                  <CardTitle>Estadisticas de Asistencia</CardTitle>
+                  <CardDescription>Consulte las horas trabajadas por monitor.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="flex-grow overflow-auto">
                   {loadingAsistencias ? (
                     <div className="flex justify-center py-8">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     </div>
                   ) : (
-                    <AsistenciaTable entries={asistencias} />
+                    <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
                   )}
                 </CardContent>
               </Card>
@@ -318,7 +320,7 @@ export default function BitacoraPage() {
 
         {/* Diálogo de edición */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] bg-white">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Editar Registro</DialogTitle>
             </DialogHeader>

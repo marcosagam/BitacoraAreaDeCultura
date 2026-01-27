@@ -8,7 +8,7 @@ import { Button } from "../components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form"
 import { Input } from "../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/acordion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import type { AsistenciaEntry } from "../types/asistencia"
 import { useState } from "react"
@@ -26,33 +26,33 @@ const formSchema = z.object({
 
 interface AsistenciaFormProps {
   onSubmit: (data: AsistenciaEntry) => void
+  onNameChange?: (name: string) => void
 }
 
 const nombres = [
+  "ALEJANDRO GOMEZ COBO",
   "ANGIE NATALIA SANTANA ROJAS",
   "ASHLY CAICEDO",
-  "BRAYAN STEBAN BRAVO MOSQUERA",
   "DIANA MARULANDA",
   "EDUARD LUBO URBANO",
   "EDWIN PORTELA",
-  "FARUCK DAVID MEZU MINA",
+  "FRANCISCO EMERSON CASTAÑEDA RAMIREZ",
+  "ISABELA OBREGON",
   "IVÁN FERNANDO VASQUEZ MANCILLA",
-  "JUAN JOSE QUINTERO",
-  "JUAN DAVID ARANGO QUINTERO",
-  "JUAN SEBASTIAN GARCIA",
-  "SILVANA BURITICA HOLGUIN",
+  "JUAN DAVID TABARES",
+  "JUAN PABLO CRUZ",
+  "KERELYN GRUTIERREZ VENECIA",
+  "LUIS SANTIAGO AZA JARAMILLO",
   "MARCOS AMILKAR MURILLO AGAMEZ",
-  "SANTIAGO FERNANDO NACED ROQUE",
-  "ROBER ANDREY HERNANDEZ RAMOS",
-  "LUIS FERNANDO MORALES OROZCO",
+  "SANTIAGO FERNANDO NACED ROJAS",
 ]
 
 // Coordenadas de referencia y rango permitido
-const TARGET_LATITUDE = 4.560700
-const TARGET_LONGITUDE = -74.055800
-const ALLOWED_RANGE = 721690 // metros
+const TARGET_LATITUDE = 3.372007
+const TARGET_LONGITUDE = -76.534116
+const ALLOWED_RANGE = 300 // metros
 
-export default function AsistenciaForm({ onSubmit }: AsistenciaFormProps) {
+export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFormProps) {
   const [selectedNombre, setSelectedNombre] = useState<string>("")
 
   // Hook de geolocalización
@@ -108,6 +108,7 @@ export default function AsistenciaForm({ onSubmit }: AsistenciaFormProps) {
   const handleNombreSelect = (nombre: string) => {
     setSelectedNombre(nombre)
     form.setValue("nombre", nombre)
+    onNameChange?.(nombre)
   }
 
   const getLocationStatusColor = () => {
@@ -211,7 +212,7 @@ export default function AsistenciaForm({ onSubmit }: AsistenciaFormProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="mt-2"
+                        className="mt-2 bg-transparent"
                         disabled={isFormDisabled}
                         onClick={() => {
                           setSelectedNombre("")
@@ -235,7 +236,7 @@ export default function AsistenciaForm({ onSubmit }: AsistenciaFormProps) {
                                 key={nombre}
                                 type="button"
                                 variant="outline"
-                                className="justify-start text-left h-auto p-3"
+                                className="justify-start text-left h-auto p-3 bg-transparent"
                                 disabled={isFormDisabled}
                                 onClick={() => handleNombreSelect(nombre)}
                               >

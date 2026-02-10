@@ -212,14 +212,15 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                     </SelectItem>
                     <SelectItem value="FARUCK DAVID MEZU MINA">FARUCK DAVID MEZU MINA</SelectItem>
                     <SelectItem value="IVÁN FERNANDO VASQUEZ MANCILLA">IVÁN FERNANDO VASQUEZ MANCILLA</SelectItem>
-                    <SelectItem value="JUAN JOSE QUINTERO">JUAN JOSE QUINTERO</SelectItem>
+                    <SelectItem value="ASHLLY DALLANA CAICEDO">ASHLLY DALLANA CAICEDO</SelectItem>
                     <SelectItem value="JUAN DAVID ARANGO QUINTERO">JUAN DAVID ARANGO QUINTERO</SelectItem>
                     <SelectItem value="JUAN SEBASTIAN GARCIA">JUAN SEBASTIAN GARCIA</SelectItem>
                     <SelectItem value="SILVANA BURITICA HOLGUIN">SILVANA BURITICA HOLGUIN</SelectItem>
                     <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
                     <SelectItem value="SANTIAGO FERNANDO NACED ROQUE">SANTIAGO FERNANDO NACED ROQUE</SelectItem>
-                    <SelectItem value="ROBER ANDREY HERNANDEZ RAMOS">ROBER ANDREY HERNANDEZ RAMOS</SelectItem>
-                    <SelectItem value="LUIS FERNANDO MORALES OROZCO">LUIS FERNANDO MORALES OROZCO</SelectItem>
+                    <SelectItem value="KELLY VELAZCO AGRONO">KELLY VELAZCO AGRONO</SelectItem>
+                    <SelectItem value="GISELLA MONTAÑO">GISELLA MONTAÑO</SelectItem>
+                    <SelectItem value="DIANA MARULANDA">DIANA MARULANDA</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

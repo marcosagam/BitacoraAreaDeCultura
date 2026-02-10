@@ -51,10 +51,6 @@ const RESPONSABLES = [
 const WEEKLY_HOURS_TARGET = 20
 
 export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaStatsProps) {
-  // Debug: Ver qué datos están llegando
-  console.log("AsistenciaStats - entries:", entries)
-  console.log("AsistenciaStats - selectedPerson:", selectedPerson)
-  console.log("AsistenciaStats - entries length:", entries.length)
   // Obtener el emoji basado en las horas trabajadas
   const getProgressEmoji = (hours: number) => {
     const percentage = (hours / WEEKLY_HOURS_TARGET) * 100
@@ -78,23 +74,16 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
 
   // Calcular las horas trabajadas a partir de las entradas y salidas
   const calculateHours = (personEntries: AsistenciaEntry[]) => {
-    console.log("calculateHours - personEntries:", personEntries)
+    // Agrupar por fecha
+    const entriesByDate: { [key: string]: AsistenciaEntry[] } = {}
     
-    // Agrupar entradas por fecha
-    const entriesByDate: Record<string, AsistenciaEntry[]> = {}
-
     for (const entry of personEntries) {
-      // Convertir fecha a string para usar como clave
-      const dateKey = entry.fecha.toISOString().split('T')[0];
-      console.log("Processing entry:", entry, "dateKey:", dateKey)
-
+      const dateKey = entry.fecha
       if (!entriesByDate[dateKey]) {
         entriesByDate[dateKey] = []
       }
       entriesByDate[dateKey].push(entry)
     }
-
-    console.log("entriesByDate:", entriesByDate)
 
     let totalMinutes = 0
 
@@ -104,14 +93,11 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
         return a.hora.localeCompare(b.hora)
       })
 
-      console.log("Processing day:", dateKey, "entries:", dayEntries)
-
       let entradaTime: string | null = null
 
       for (const entry of dayEntries) {
         if (entry.tipo === "entrada") {
           entradaTime = entry.hora
-          console.log("Found entrada at:", entradaTime)
         } else if (entry.tipo === "salida" && entradaTime) {
           // Calcular diferencia entre entrada y salida
           const [entradaHour, entradaMin] = entradaTime.split(":").map(Number)
@@ -122,15 +108,6 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
           
           const diff = salidaMinutes - entradaMinutes
           
-          console.log("Calculating hours:", {
-            entrada: entradaTime,
-            salida: entry.hora,
-            entradaMinutes,
-            salidaMinutes,
-            diff,
-            diffHours: diff / 60
-          })
-          
           if (diff > 0) {
             totalMinutes += diff
           }
@@ -140,35 +117,19 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
       }
     }
 
-    const totalHours = totalMinutes / 60
-    console.log("Total calculated hours:", totalHours)
-    return totalHours // Retornar en horas
+    return totalMinutes / 60 // Retornar en horas
   }
 
   // Filtrar entradas por persona y rango de fechas
   const getEntriesInRange = (name: string, startDate: Date, endDate: Date) => {
-    console.log("getEntriesInRange called with:", { name, startDate, endDate })
-    
-    const filtered = entries.filter((entry) => {
-      // entry.fecha ya es un objeto Date, no necesitamos convertirlo
-      const entryDate = new Date(entry.fecha)
+    return entries.filter((entry) => {
+      // entry.fecha ya es un objeto Date, usarlo directamente
+      const entryDate = entry.fecha
       const nameMatch = entry.nombre === name
       const dateMatch = isWithinInterval(entryDate, { start: startDate, end: endDate })
       
-      console.log("Filtering entry:", {
-        entryName: entry.nombre,
-        targetName: name,
-        nameMatch,
-        entryDate,
-        dateMatch,
-        included: nameMatch && dateMatch
-      })
-      
       return nameMatch && dateMatch
     })
-    
-    console.log("Filtered entries:", filtered)
-    return filtered
   }
 
   // Calcular estadísticas para todos los monitores

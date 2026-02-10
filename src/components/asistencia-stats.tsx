@@ -19,7 +19,6 @@ import {
   startOfMonth,
   endOfMonth,
   isWithinInterval,
-  differenceInMinutes,
   format,
   getWeeksInMonth,
 } from "date-fns"
@@ -78,7 +77,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
     const entriesByDate: { [key: string]: AsistenciaEntry[] } = {}
     
     for (const entry of personEntries) {
-      const dateKey = entry.fecha
+      const dateKey = format(entry.fecha, "yyyy-MM-dd")
       if (!entriesByDate[dateKey]) {
         entriesByDate[dateKey] = []
       }

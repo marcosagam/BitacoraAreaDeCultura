@@ -14,6 +14,7 @@ import type { AsistenciaEntry } from "../types/asistencia"
 import { useState } from "react"
 import { useGeolocation } from "../hooks/useGeolocation"
 import { MapPin, CheckCircle, XCircle, Loader2, LogIn, LogOut } from "lucide-react"
+import { NOMBRES_MONITORES } from "../constants/nombres"
 
 const formSchema = z.object({
   nombre: z.string().min(1, { message: "Debe seleccionar un nombre" }),
@@ -28,19 +29,6 @@ interface AsistenciaFormProps {
   onSubmit: (data: AsistenciaEntry) => void
   onNameChange?: (name: string) => void
 }
-
-const nombres = [
-  "ANGIE NATALIA SANTANA ROJAS",
-  "ASHLY CAICEDO",
-  "DIANA MARULANDA",
-  "FARUCK DAVID MEZU MINA",
-  "JUAN DAVID ARANGO QUINTERO",
-  "JUAN SEBASTIAN GARCIA",
-  "KELLY VELAZCO AGRONO",
-  "SILVANA BURITICA HOLGUIN",
-  "MARCOS AMILKAR MURILLO AGAMEZ",
-  "SANTIAGO FERNANDO NACED ROJAS",
-]
 
 // Coordenadas de referencia y rango permitido
 const TARGET_LATITUDE = 3.372007
@@ -226,7 +214,7 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="grid gap-2 max-h-60 overflow-y-auto">
-                            {nombres.map((nombre) => (
+                            {NOMBRES_MONITORES.map((nombre) => (
                               <Button
                                 key={nombre}
                                 type="button"

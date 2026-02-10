@@ -13,6 +13,7 @@ import {
 } from "./ui/table"
 import { AlertTriangle, Clock, Calendar, Target } from "lucide-react"
 import type { AsistenciaEntry } from "../types/asistencia"
+import { NOMBRES_MONITORES } from "../constants/nombres"
 import {
   startOfWeek,
   endOfWeek,
@@ -28,24 +29,6 @@ interface AsistenciaStatsProps {
   entries: AsistenciaEntry[]
   selectedPerson?: string
 }
-
-const RESPONSABLES = [
-  "ALEJANDRO GOMEZ COBO",
-  "ANGIE NATALIA SANTANA ROJAS",
-  "ASHLY CAICEDO",
-  "DIANA MARULANDA",
-  "EDUARD LUBO URBANO",
-  "EDWIN PORTELA",
-  "FRANCISCO EMERSON CASTAÑEDA RAMIREZ",
-  "ISABELA OBREGON",
-  "IVAN FERNANDO VASQUEZ MANCILLA",
-  "JUAN DAVID TABARES",
-  "JUAN PABLO CRUZ",
-  "KERELYN GRUTIERREZ VENECIA",
-  "LUIS SANTIAGO AZA JARAMILLO",
-  "MARCOS AMILKAR MURILLO AGAMEZ",
-  "SANTIAGO FERNANDO NACED ROJAS",
-]
 
 const WEEKLY_HOURS_TARGET = 20
 
@@ -77,7 +60,9 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
     const entriesByDate: { [key: string]: AsistenciaEntry[] } = {}
     
     for (const entry of personEntries) {
-      const dateKey = format(entry.fecha, "yyyy-MM-dd")
+      // Asegurarse de que entry.fecha sea un objeto Date antes de formatear
+      const entryDate = entry.fecha instanceof Date ? entry.fecha : new Date(entry.fecha)
+      const dateKey = format(entryDate, "yyyy-MM-dd")
       if (!entriesByDate[dateKey]) {
         entriesByDate[dateKey] = []
       }
@@ -122,8 +107,8 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
   // Filtrar entradas por persona y rango de fechas
   const getEntriesInRange = (name: string, startDate: Date, endDate: Date) => {
     return entries.filter((entry) => {
-      // entry.fecha ya es un objeto Date, usarlo directamente
-      const entryDate = entry.fecha
+      // Asegurarse de que entry.fecha sea un objeto Date
+      const entryDate = entry.fecha instanceof Date ? entry.fecha : new Date(entry.fecha)
       const nameMatch = entry.nombre === name
       const dateMatch = isWithinInterval(entryDate, { start: startDate, end: endDate })
       
@@ -143,7 +128,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
     const weeksInMonth = getWeeksInMonth(now, { weekStartsOn: 1 })
     const monthlyHoursTarget = WEEKLY_HOURS_TARGET * weeksInMonth
 
-    return RESPONSABLES.map((nombre) => {
+    return NOMBRES_MONITORES.map((nombre) => {
       const weeklyEntries = getEntriesInRange(nombre, weekStart, weekEnd)
       const monthlyEntries = getEntriesInRange(nombre, monthStart, monthEnd)
 

@@ -13,10 +13,13 @@ import { Alert, AlertDescription } from "../components/ui/alert"
 import type { AsistenciaEntry } from "../types/asistencia"
 import { useState } from "react"
 import { useGeolocation } from "../hooks/useGeolocation"
-import { MapPin, CheckCircle, XCircle, Loader2, LogIn, LogOut } from "lucide-react"
-import { NOMBRES_MONITORES } from "../constants/nombres"
+import { MapPin, CheckCircle, XCircle, Loader2, LogIn, LogOut, Building2, Users } from "lucide-react"
+import { NOMBRES_MONITORES, NOMBRES_MONITORES_AUDITORIO } from "../constants/nombres"
 
 const formSchema = z.object({
+  espacio: z.enum(["oficina", "auditorio"], {
+    required_error: "Debe seleccionar el espacio",
+  }),
   nombre: z.string().min(1, { message: "Debe seleccionar un nombre" }),
   fecha: z.string().min(1, { message: "La fecha es requerida" }),
   hora: z.string().min(1, { message: "La hora es requerida" }),
@@ -28,20 +31,31 @@ const formSchema = z.object({
 interface AsistenciaFormProps {
   onSubmit: (data: AsistenciaEntry) => void
   onNameChange?: (name: string) => void
+  onEspacioChange?: (espacio: "oficina" | "auditorio") => void
 }
 
-// Coordenadas de referencia y rango permitido
-const TARGET_LATITUDE = 3.372007
-const TARGET_LONGITUDE = -76.534116
+// Ubicaciones permitidas
+const ALLOWED_LOCATIONS = [
+  {
+    latitude: 3.372007,
+    longitude: -76.534116,
+    name: "Ubicación 1"
+  },
+  {
+    latitude: 3.375805,
+    longitude: -76.532798,
+    name: "Ubicación 2"
+  }
+]
 const ALLOWED_RANGE = 300 // metros
 
-export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFormProps) {
+export default function AsistenciaForm({ onSubmit, onNameChange, onEspacioChange }: AsistenciaFormProps) {
   const [selectedNombre, setSelectedNombre] = useState<string>("")
+  const [selectedEspacio, setSelectedEspacio] = useState<"oficina" | "auditorio">("oficina")
 
   // Hook de geolocalización
   const geoLocation = useGeolocation({
-    targetLatitude: TARGET_LATITUDE,
-    targetLongitude: TARGET_LONGITUDE,
+    targetLocations: ALLOWED_LOCATIONS,
     allowedRange: ALLOWED_RANGE,
     enableHighAccuracy: true,
     timeout: 15000,
@@ -54,6 +68,7 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      espacio: "oficina",
       nombre: "",
       fecha: format(now, "yyyy-MM-dd"),
       hora: currentTime,
@@ -72,6 +87,7 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
       fecha: new Date(values.fecha),
       hora: values.hora,
       tipo: values.tipo,
+      espacio: values.espacio,
       fechaCreacion: new Date(),
       latitud: geoLocation.latitude,
       longitud: geoLocation.longitude,
@@ -80,6 +96,7 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
 
     // Reset form
     form.reset({
+      espacio: values.espacio,
       nombre: "",
       fecha: format(now, "yyyy-MM-dd"),
       hora: currentTime,
@@ -120,6 +137,10 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
   const isFormDisabled = !geoLocation.isInRange || geoLocation.loading || !!geoLocation.error
 
   const selectedTipo = form.watch("tipo")
+  const selectedEspacioValue = form.watch("espacio")
+  
+  // Obtener la lista de nombres según el espacio seleccionado
+  const nombresDisponibles = selectedEspacioValue === "oficina" ? NOMBRES_MONITORES : NOMBRES_MONITORES_AUDITORIO
 
   return (
     <div className="space-y-6">
@@ -142,6 +163,53 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          {/* Selector de Espacio */}
+          <FormField
+            control={form.control}
+            name="espacio"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Espacio <span className="text-red-500">*</span>
+                </FormLabel>
+                <Select 
+                  onValueChange={(value) => {
+                    const espacioValue = value as "oficina" | "auditorio"
+                    field.onChange(value)
+                    setSelectedEspacio(espacioValue)
+                    onEspacioChange?.(espacioValue)
+                    // Limpiar nombre seleccionado al cambiar de espacio
+                    setSelectedNombre("")
+                    form.setValue("nombre", "")
+                  }} 
+                  value={field.value} 
+                  disabled={isFormDisabled}
+                >
+                  <FormControl>
+                    <SelectTrigger className="border-blue-300 bg-blue-50">
+                      <SelectValue placeholder="Seleccione el espacio" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oficina">
+                      <div className="flex items-center space-x-2">
+                        <Building2 className="h-4 w-4 text-blue-600" />
+                        <span>Oficina</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="auditorio">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-purple-600" />
+                        <span>Auditorio</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Tipo de registro */}
           <FormField
             control={form.control}
@@ -214,7 +282,7 @@ export default function AsistenciaForm({ onSubmit, onNameChange }: AsistenciaFor
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="grid gap-2 max-h-60 overflow-y-auto">
-                            {NOMBRES_MONITORES.map((nombre) => (
+                            {nombresDisponibles.map((nombre) => (
                               <Button
                                 key={nombre}
                                 type="button"

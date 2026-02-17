@@ -35,6 +35,7 @@ export default function BitacoraPage() {
   const [editingEntry, setEditingEntry] = useState<BitacoraEntry | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
+  const [selectedEspacio, setSelectedEspacio] = useState<"oficina" | "auditorio">("oficina")
 
   // Cargar entradas desde Firebase al iniciar
   useEffect(() => {
@@ -295,7 +296,11 @@ export default function BitacoraPage() {
                   <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AsistenciaForm onSubmit={addAsistenciaEntry} onNameChange={(name) => setSelectedPerson(name)} />
+                  <AsistenciaForm 
+                    onSubmit={addAsistenciaEntry} 
+                    onNameChange={(name) => setSelectedPerson(name)}
+                    onEspacioChange={(espacio) => setSelectedEspacio(espacio)}
+                  />
                 </CardContent>
               </Card>
 
@@ -310,7 +315,7 @@ export default function BitacoraPage() {
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     </div>
                   ) : (
-                    <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
+                    <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} selectedEspacio={selectedEspacio} />
                   )}
                 </CardContent>
               </Card>

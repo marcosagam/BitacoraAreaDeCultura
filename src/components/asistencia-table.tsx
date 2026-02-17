@@ -50,6 +50,7 @@ export default function AsistenciaTable({ entries }: AsistenciaTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Nombre</TableHead>
+              <TableHead className="w-[80px]">Espacio</TableHead>
               <TableHead className="w-[90px]">Fecha</TableHead>
               <TableHead className="w-[70px]">Hora</TableHead>
               <TableHead className="w-[90px]">Tipo</TableHead>
@@ -61,7 +62,7 @@ export default function AsistenciaTable({ entries }: AsistenciaTableProps) {
           <TableBody>
             {getCurrentEntries().length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   No hay registros de asistencia
                 </TableCell>
               </TableRow>
@@ -69,6 +70,11 @@ export default function AsistenciaTable({ entries }: AsistenciaTableProps) {
               getCurrentEntries().map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium">{entry.nombre}</TableCell>
+                  <TableCell>
+                    <Badge variant={entry.espacio === "oficina" ? "default" : "secondary"}>
+                      {entry.espacio === "oficina" ? "Oficina" : "Auditorio"}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{format(new Date(entry.fecha), "dd/MM/yyyy")}</TableCell>
                   <TableCell>{entry.hora}</TableCell>
                   <TableCell>{getTipoBadge(entry.tipo)}</TableCell>

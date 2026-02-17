@@ -4,6 +4,7 @@ export interface AsistenciaEntry {
   fecha: Date
   hora: string
   tipo: "entrada" | "salida"
+  espacio: "oficina" | "auditorio"
   fechaCreacion: Date
   latitud: number
   longitud: number

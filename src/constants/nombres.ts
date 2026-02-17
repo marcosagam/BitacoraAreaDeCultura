@@ -13,4 +13,13 @@ export const NOMBRES_MONITORES = [
   "SANTIAGO FERNANDO NACED ROJAS",
 ] as const
 
+export const NOMBRES_MONITORES_AUDITORIO = [
+  "BRAYAN BRAVO",
+  "EDWIN PORTELA",
+  "DANIEL LOZANO",
+  "SOFIA MONTOYA",
+] as const
+
 export type NombreMonitor = typeof NOMBRES_MONITORES[number]
+export type NombreMonitorAuditorio = typeof NOMBRES_MONITORES_AUDITORIO[number]
+

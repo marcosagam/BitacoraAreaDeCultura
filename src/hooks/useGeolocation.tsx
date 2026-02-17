@@ -15,8 +15,11 @@ interface UseGeolocationOptions {
   enableHighAccuracy?: boolean
   timeout?: number
   maximumAge?: number
-  targetLatitude: number
-  targetLongitude: number
+  targetLocations: Array<{
+    latitude: number
+    longitude: number
+    name?: string
+  }>
   allowedRange: number // en metros
 }
 
@@ -58,8 +61,20 @@ export function useGeolocation(options: UseGeolocationOptions): GeolocationState
 
     const handleSuccess = (position: GeolocationPosition) => {
       const { latitude, longitude, accuracy } = position.coords
-      const distance = calculateDistance(latitude, longitude, options.targetLatitude, options.targetLongitude)
-      const isInRange = distance <= options.allowedRange
+      
+      // Calcular distancia a cada ubicación permitida y encontrar la más cercana
+      let minDistance = Infinity
+      let isInRange = false
+      
+      for (const target of options.targetLocations) {
+        const distance = calculateDistance(latitude, longitude, target.latitude, target.longitude)
+        if (distance < minDistance) {
+          minDistance = distance
+        }
+        if (distance <= options.allowedRange) {
+          isInRange = true
+        }
+      }
 
       setState({
         latitude,
@@ -68,7 +83,7 @@ export function useGeolocation(options: UseGeolocationOptions): GeolocationState
         error: null,
         loading: false,
         isInRange,
-        distance,
+        distance: minDistance,
       })
     }
 
@@ -103,7 +118,7 @@ export function useGeolocation(options: UseGeolocationOptions): GeolocationState
     return () => {
       navigator.geolocation.clearWatch(watchId)
     }
-  }, [options.targetLatitude, options.targetLongitude, options.allowedRange])
+  }, [options.targetLocations, options.allowedRange])
 
   return state
 }

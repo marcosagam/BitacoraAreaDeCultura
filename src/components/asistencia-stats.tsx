@@ -13,7 +13,7 @@ import {
 } from "./ui/table"
 import { AlertTriangle, Clock, Calendar, Target } from "lucide-react"
 import type { AsistenciaEntry } from "../types/asistencia"
-import { NOMBRES_MONITORES } from "../constants/nombres"
+import { NOMBRES_MONITORES, NOMBRES_MONITORES_AUDITORIO } from "../constants/nombres"
 import {
   startOfWeek,
   endOfWeek,
@@ -28,11 +28,17 @@ import { es } from "date-fns/locale"
 interface AsistenciaStatsProps {
   entries: AsistenciaEntry[]
   selectedPerson?: string
+  selectedEspacio: "oficina" | "auditorio"
 }
 
 const WEEKLY_HOURS_TARGET = 20
 
-export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaStatsProps) {
+export default function AsistenciaStats({ entries, selectedPerson, selectedEspacio }: AsistenciaStatsProps) {
+  // Filtrar entradas por espacio
+  const entriesByEspacio = entries.filter(entry => entry.espacio === selectedEspacio)
+  
+  // Obtener lista de responsables según el espacio
+  const RESPONSABLES = selectedEspacio === "oficina" ? NOMBRES_MONITORES : NOMBRES_MONITORES_AUDITORIO
   // Obtener el emoji basado en las horas trabajadas
   const getProgressEmoji = (hours: number) => {
     const percentage = (hours / WEEKLY_HOURS_TARGET) * 100
@@ -106,7 +112,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
 
   // Filtrar entradas por persona y rango de fechas
   const getEntriesInRange = (name: string, startDate: Date, endDate: Date) => {
-    return entries.filter((entry) => {
+    return entriesByEspacio.filter((entry) => {
       // Asegurarse de que entry.fecha sea un objeto Date
       const entryDate = entry.fecha instanceof Date ? entry.fecha : new Date(entry.fecha)
       const nameMatch = entry.nombre === name
@@ -128,7 +134,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
     const weeksInMonth = getWeeksInMonth(now, { weekStartsOn: 1 })
     const monthlyHoursTarget = WEEKLY_HOURS_TARGET * weeksInMonth
 
-    return NOMBRES_MONITORES.map((nombre) => {
+    return RESPONSABLES.map((nombre) => {
       const weeklyEntries = getEntriesInRange(nombre, weekStart, weekEnd)
       const monthlyEntries = getEntriesInRange(nombre, monthStart, monthEnd)
 
@@ -148,7 +154,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
         monthlyHoursTarget,
       }
     })
-  }, [entries])
+  }, [entriesByEspacio, RESPONSABLES])
 
   // Estadísticas de la persona seleccionada
   const selectedStats = useMemo(() => {
@@ -182,7 +188,7 @@ export default function AsistenciaStats({ entries, selectedPerson }: AsistenciaS
       horasFaltantesMes,
       monthlyHoursTarget,
     }
-  }, [selectedPerson, entries])
+  }, [selectedPerson, entriesByEspacio])
 
   return (
     <div className="space-y-4">

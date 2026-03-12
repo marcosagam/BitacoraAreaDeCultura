@@ -3,6 +3,7 @@ import {
   addDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   doc,
   query,
   orderBy,
@@ -139,6 +140,18 @@ export const updateEntry = async (entry: BitacoraEntry): Promise<void> => {
   } catch (error) {
     console.error("Error al actualizar entrada:", error)
     toast.error("No se pudo actualizar el registro")
+    throw error
+  }
+}
+
+// Eliminar una entrada
+export const deleteEntry = async (id: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, COLLECTION_NAME, id))
+    toast.success("Registro eliminado correctamente")
+  } catch (error) {
+    console.error("Error al eliminar entrada:", error)
+    toast.error("No se pudo eliminar el registro")
     throw error
   }
 }

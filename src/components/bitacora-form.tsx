@@ -9,7 +9,11 @@ import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import type { BitacoraEntry } from "../types/bitacora"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { getAllResponsables } from "../firebase/responsable-service"
+import { getAllCategorias } from "../firebase/categoria-service"
+import type { Responsable } from "../types/responsable"
+import type { Categoria } from "../types/categoria"
 
 const formSchema = z.object({
   fecha: z.string().min(1, { message: "La fecha es requerida" }),
@@ -36,6 +40,10 @@ interface BitacoraFormProps {
 }
 
 export default function BitacoraForm({ onSubmit, initialData, isEditing = false }: BitacoraFormProps) {
+  const [responsables, setResponsables] = useState<Responsable[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [loading, setLoading] = useState(true)
+
   const today = new Date()
   const nextWeek = new Date(today)
   nextWeek.setDate(today.getDate() + 7)
@@ -52,6 +60,27 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
       completada: false,
     },
   })
+
+  // Cargar responsables y categorías desde Firebase
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const [responsablesData, categoriasData] = await Promise.all([
+          getAllResponsables(),
+          getAllCategorias(),
+        ])
+        setResponsables(responsablesData)
+        setCategorias(categoriasData)
+      } catch (error) {
+        console.error("Error al cargar datos:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
 
   // Cargar datos iniciales si estamos editando
   useEffect(() => {
@@ -152,33 +181,24 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                 <FormLabel>
                   Categoría <span className="text-red-500">*</span>
                 </FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una categoría" />
+                      <SelectValue placeholder={loading ? "Cargando..." : "Seleccione una categoría"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="scrollable-dropdown">
-                    <SelectItem value="capacitacion">CAPACITACION</SelectItem>
-                    <SelectItem value="convocatoria">CONVOCATORIA</SelectItem>
-                    <SelectItem value="correo_electronico">CORREO ELECTRONICO</SelectItem>
-                    <SelectItem value="estadistica_participacion">ESTISTICA DE PARTICIPACION</SelectItem>
-                    <SelectItem value="eventos">EVENTOS</SelectItem>
-                    <SelectItem value="formulario">FORMULARIO</SelectItem>
-                    <SelectItem value="informe">INFORME</SelectItem>
-                    <SelectItem value="ofimatica">OFIMATICA</SelectItem>
-                    <SelectItem value="participacion">PARTICIPACION</SelectItem>
-                    <SelectItem value="prestamo">PRESTAMO</SelectItem>
-                    <SelectItem value="prestamo_equipos_sonido">PRESTAMO DE EQUIPOS DE SONIDO</SelectItem>
-                    <SelectItem value="propuesta">PROPUESTA</SelectItem>
-                    <SelectItem value="publicacion_redes">PUBLICACION EN REDES SOCIALES</SelectItem>
-                    <SelectItem value="reunion">REUNION</SelectItem>
-                    <SelectItem value="solicitud">SOLICITUD</SelectItem>
-                    <SelectItem value="tareas_bodega">TAREAS DE BODEGA</SelectItem>
-                    <SelectItem value="tareas_oficina">TAREAS GENERALES DE OFICINA</SelectItem>
-                    <SelectItem value="uniformes">UNIFORMES</SelectItem>
-                    <SelectItem value="ficha_tecnica">FICHA TECNICA</SelectItem>
-                    <SelectItem value="estudio_de_mercado">ESTUDIO DE MERCADO</SelectItem>
+                    {categorias.length === 0 ? (
+                      <SelectItem value="no-categories" disabled>
+                        No hay categorías disponibles
+                      </SelectItem>
+                    ) : (
+                      categorias.map((categoria) => (
+                        <SelectItem key={categoria.id} value={categoria.valor}>
+                          {categoria.nombre}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -194,33 +214,24 @@ export default function BitacoraForm({ onSubmit, initialData, isEditing = false 
                 <FormLabel>
                   Responsable <span className="text-red-500">*</span>
                 </FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un responsable" />
+                      <SelectValue placeholder={loading ? "Cargando..." : "Seleccione un responsable"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="scrollable-dropdown">
-                    <SelectItem value="ANGIE NATALIA SANTANA ROJAS">ANGIE NATALIA SANTANA ROJAS</SelectItem>
-                    <SelectItem value="ASHLY CAICEDO">ASHLY CAICEDO</SelectItem>
-                    <SelectItem value="BRAYAN STEBAN BRAVO MOSQUERA">BRAYAN STEBAN BRAVO MOSQUERA</SelectItem>
-                    <SelectItem value="DIANA MARULANDA">DIANA MARULANDA</SelectItem>
-                    <SelectItem value="EDUARD LUBO URBANO">EDUARD LUBO URBANO</SelectItem>
-                    <SelectItem value="EDWIN PORTELA">EDWIN PORTELA</SelectItem>
-                    <SelectItem value="FRANCISCO EMERSON CASTAÑEDA RAMIREZ">
-                      FRANCISCO EMERSON CASTAÑEDA RAMIREZ
-                    </SelectItem>
-                    <SelectItem value="FARUCK DAVID MEZU MINA">FARUCK DAVID MEZU MINA</SelectItem>
-                    <SelectItem value="IVÁN FERNANDO VASQUEZ MANCILLA">IVÁN FERNANDO VASQUEZ MANCILLA</SelectItem>
-                    <SelectItem value="ASHLLY DALLANA CAICEDO">ASHLLY DALLANA CAICEDO</SelectItem>
-                    <SelectItem value="JUAN DAVID ARANGO QUINTERO">JUAN DAVID ARANGO QUINTERO</SelectItem>
-                    <SelectItem value="JUAN SEBASTIAN GARCIA">JUAN SEBASTIAN GARCIA</SelectItem>
-                    <SelectItem value="SILVANA BURITICA HOLGUIN">SILVANA BURITICA HOLGUIN</SelectItem>
-                    <SelectItem value="MARCOS AMILKAR MURILLO AGAMEZ">MARCOS AMILKAR MURILLO AGAMEZ</SelectItem>
-                    <SelectItem value="SANTIAGO FERNANDO NACED ROQUE">SANTIAGO FERNANDO NACED ROQUE</SelectItem>
-                    <SelectItem value="KELLY VELAZCO AGRONO">KELLY VELAZCO AGRONO</SelectItem>
-                    <SelectItem value="GISELLA MONTAÑO">GISELLA MONTAÑO</SelectItem>
-                    <SelectItem value="DIANA MARULANDA">DIANA MARULANDA</SelectItem>
+                    {responsables.length === 0 ? (
+                      <SelectItem value="no-responsables" disabled>
+                        No hay responsables disponibles
+                      </SelectItem>
+                    ) : (
+                      responsables.map((responsable) => (
+                        <SelectItem key={responsable.id} value={responsable.nombre}>
+                          {responsable.nombre}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

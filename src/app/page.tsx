@@ -249,11 +249,11 @@ export default function BitacoraPage() {
             onValueChange={setActiveTab}
             className="w-full flex-grow flex flex-col"
           >
-            <TabsList className={`grid w-full ${role === "guest" ? "grid-cols-1" : "grid-cols-4"}`}>
+            <TabsList className={`grid w-full ${role === "guest" ? "grid-cols-2" : "grid-cols-4"}`}>
               {role !== "guest" && <TabsTrigger value="form">Nuevo Registro</TabsTrigger>}
               <TabsTrigger value="entries">Ver Registros</TabsTrigger>
               {role !== "guest" && <TabsTrigger value="stats">Estadísticas</TabsTrigger>}
-              {role !== "guest" && <TabsTrigger value="asistencia">Asistencia</TabsTrigger>}
+              <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
             </TabsList>
 
             {role !== "guest" && (
@@ -312,40 +312,38 @@ export default function BitacoraPage() {
               </TabsContent>
             )}
 
-            {role !== "guest" && (
-              <TabsContent value="asistencia" className="flex-grow">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Registrar Asistencia</CardTitle>
-                      <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AsistenciaForm 
-                        onSubmit={addAsistenciaEntry} 
-                        onNameChange={(name) => setSelectedPerson(name)}
-                      />
-                    </CardContent>
-                  </Card>
+            <TabsContent value="asistencia" className="flex-grow">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Registrar Asistencia</CardTitle>
+                    <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AsistenciaForm 
+                      onSubmit={addAsistenciaEntry} 
+                      onNameChange={(name) => setSelectedPerson(name)}
+                    />
+                  </CardContent>
+                </Card>
 
-                  <Card className="flex flex-col">
-                    <CardHeader>
-                      <CardTitle>Estadisticas de Asistencia</CardTitle>
-                      <CardDescription>Consulte las horas trabajadas por monitor.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow overflow-auto">
-                      {loadingAsistencias ? (
-                        <div className="flex justify-center py-8">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                        </div>
-                      ) : (
-                        <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            )}
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <CardTitle>Estadisticas de Asistencia</CardTitle>
+                    <CardDescription>Consulte las horas trabajadas por monitor.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow overflow-auto">
+                    {loadingAsistencias ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
 
           {/* Diálogo de edición */}

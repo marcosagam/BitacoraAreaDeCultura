@@ -1,11 +1,12 @@
 "use client"
 
+import { Suspense } from "react"
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "../../../contexts/AuthContext"
 import type { User } from "../../../types/auth"
 
-export default function SSOPage() {
+function SSOHandler() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
@@ -58,5 +59,17 @@ export default function SSOPage() {
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
       <p style={{ color: "#6b7280" }}>Iniciando sesión...</p>
     </div>
+  )
+}
+
+export default function SSOPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <p style={{ color: "#6b7280" }}>Cargando...</p>
+      </div>
+    }>
+      <SSOHandler />
+    </Suspense>
   )
 }

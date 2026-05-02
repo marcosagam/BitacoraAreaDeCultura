@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { CheckCircle, XCircle, Edit, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog"
 import {
   AlertDialog,
@@ -18,16 +19,39 @@ import {
   AlertDialogTitle,
 } from "../components/ui/alert-dialog"
 import type { BitacoraEntry } from "../types/bitacora"
+import type { Area } from "../types/auth"
+import type { Estado } from "../types/estado"
+import { getAllEstados } from "../firebase/estado-service"
 
 interface BitacoraTableProps {
   entries: BitacoraEntry[]
   onToggleComplete?: (id: string) => void
+  onChangeEstado?: (id: string, estado: string) => void
   onEdit?: (entry: BitacoraEntry) => void
   onDelete?: (id: string) => void
   isGuest?: boolean
+  area?: Area
 }
 
-export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDelete, isGuest = false }: BitacoraTableProps) {
+export default function BitacoraTable({
+  entries,
+  onToggleComplete,
+  onChangeEstado,
+  onEdit,
+  onDelete,
+  isGuest = false,
+  area = "cultura",
+}: BitacoraTableProps) {
+  const isDeporte = area === "deporte"
+  const [estados, setEstados] = useState<Estado[]>([])
+
+  useEffect(() => {
+    if (isDeporte) {
+      getAllEstados().then(setEstados).catch(console.error)
+    }
+  }, [isDeporte])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedEntry, setSelectedEntry] = useState<BitacoraEntry | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedEntry, setSelectedEntry] = useState<BitacoraEntry | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -88,8 +112,46 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
     return labels[category] || category
   }
 
+  const getEstadoLabel = (valor: string) => {
+    const found = estados.find((e) => e.valor === valor)
+    return found ? found.nombre : valor
+  }
+
   const isOverdue = (entry: BitacoraEntry) => {
     return !entry.completada && new Date(entry.fechaEntrega) < new Date()
+  }
+
+  // Render del estado según área
+  const renderEstado = (entry: BitacoraEntry) => {
+    if (isDeporte) {
+      if (!onChangeEstado) {
+        return <Badge variant="outline">{entry.estado ? getEstadoLabel(entry.estado) : "Sin estado"}</Badge>
+      }
+      return (
+        <Select
+          value={entry.estado ?? ""}
+          onValueChange={(val) => onChangeEstado(entry.id, val)}
+        >
+          <SelectTrigger className="h-7 text-xs w-[130px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            {estados.map((e) => (
+              <SelectItem key={e.id} value={e.valor}>{e.nombre}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    }
+    return entry.completada ? (
+      <span className="flex items-center text-green-600">
+        <CheckCircle className="mr-1 h-4 w-4" /> Completada
+      </span>
+    ) : (
+      <span className="flex items-center text-red-600">
+        <XCircle className="mr-1 h-4 w-4" /> Pendiente
+      </span>
+    )
   }
 
   const handleDelete = () => {
@@ -106,11 +168,13 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
         <div
           key={entry.id}
           className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-            isOverdue(entry)
-              ? "bg-red-50 border-red-300"
-              : entry.completada
-                ? "bg-green-50 border-green-300"
-                : "bg-yellow-50 border-yellow-300"
+            isDeporte
+              ? "bg-blue-50 border-blue-200"
+              : isOverdue(entry)
+                ? "bg-red-50 border-red-300"
+                : entry.completada
+                  ? "bg-green-50 border-green-300"
+                  : "bg-yellow-50 border-yellow-300"
           }`}
           onClick={() => isGuest && setSelectedEntry(entry)}
         >
@@ -119,26 +183,15 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
             {!isGuest && (
               <div className="flex items-center gap-1">
                 {onEdit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onEdit(entry)
-                    }}
-                    title="Editar"
-                  >
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(entry) }} title="Editar">
                     <Edit className="h-4 w-4" />
                   </Button>
                 )}
-                {onToggleComplete && (
+                {onToggleComplete && !isDeporte && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onToggleComplete(entry.id)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); onToggleComplete(entry.id) }}
                     title={entry.completada ? "Marcar pendiente" : "Marcar completada"}
                   >
                     {entry.completada ? (
@@ -152,10 +205,7 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setDeleteId(entry.id)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(entry.id) }}
                     title="Eliminar"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
@@ -184,17 +234,9 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Estado:</span>
-              {entry.completada ? (
-                <span className="flex items-center text-green-600 font-medium">
-                  <CheckCircle className="mr-1 h-4 w-4" /> Completada
-                </span>
-              ) : (
-                <span className="flex items-center text-red-600 font-medium">
-                  <XCircle className="mr-1 h-4 w-4" /> Pendiente
-                </span>
-              )}
+              <div onClick={(e) => e.stopPropagation()}>{renderEstado(entry)}</div>
             </div>
-            {isOverdue(entry) && (
+            {!isDeporte && isOverdue(entry) && (
               <Badge variant="destructive" className="w-full justify-center">
                 VENCIDA
               </Badge>
@@ -233,16 +275,22 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
               getCurrentEntries().map((entry) => (
                 <TableRow
                   key={entry.id}
-                  className={`${isOverdue(entry) ? "bg-red-100" : entry.completada ? "bg-green-50" : "bg-yellow-50"} ${isGuest ? "cursor-pointer hover:bg-opacity-80" : ""}`}
+                  className={`${
+                    isDeporte
+                      ? "bg-blue-50"
+                      : isOverdue(entry)
+                        ? "bg-red-100"
+                        : entry.completada
+                          ? "bg-green-50"
+                          : "bg-yellow-50"
+                  } ${isGuest ? "cursor-pointer hover:bg-opacity-80" : ""}`}
                   onClick={() => isGuest && setSelectedEntry(entry)}
                 >
                   <TableCell className="whitespace-nowrap">{format(new Date(entry.fecha), "dd/MM/yyyy")}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     {format(new Date(entry.fechaEntrega), "dd/MM/yyyy")}
-                    {isOverdue(entry) && (
-                      <Badge variant="destructive" className="ml-2">
-                        Vencida
-                      </Badge>
+                    {!isDeporte && isOverdue(entry) && (
+                      <Badge variant="destructive" className="ml-2">Vencida</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -259,41 +307,22 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
                   <TableCell>
                     <Badge className={getCategoryBadge(entry.categoria)}>{getCategoryLabel(entry.categoria)}</Badge>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {entry.completada ? (
-                      <span className="flex items-center text-green-600">
-                        <CheckCircle className="mr-1 h-4 w-4" /> Completada
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-red-600">
-                        <XCircle className="mr-1 h-4 w-4" /> Pendiente
-                      </span>
-                    )}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {renderEstado(entry)}
                   </TableCell>
                   {!isGuest && (
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {onEdit && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onEdit(entry)
-                            }}
-                            title="Editar"
-                          >
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(entry) }} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
                         )}
-                        {onToggleComplete && (
+                        {onToggleComplete && !isDeporte && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onToggleComplete(entry.id)
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onToggleComplete(entry.id) }}
                             title={entry.completada ? "Marcar pendiente" : "Marcar completada"}
                           >
                             {entry.completada ? (
@@ -307,10 +336,7 @@ export default function BitacoraTable({ entries, onToggleComplete, onEdit, onDel
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setDeleteId(entry.id)
-                            }}
+                            onClick={(e) => { e.stopPropagation(); setDeleteId(entry.id) }}
                             title="Eliminar"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >

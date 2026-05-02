@@ -22,13 +22,14 @@ import {
 import { FolderPlus, Trash2 } from "lucide-react"
 import { getAllCategorias, createCategoria, deleteCategoria } from "../firebase/categoria-service"
 import type { Categoria } from "../types/categoria"
+import type { Area } from "../types/auth"
 import { format } from "date-fns"
 
 const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
 })
 
-export default function CategoriasManager() {
+export default function CategoriasManager({ area = "cultura" }: { area?: Area }) {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -47,7 +48,7 @@ export default function CategoriasManager() {
   const loadCategorias = async () => {
     try {
       setLoading(true)
-      const data = await getAllCategorias()
+      const data = await getAllCategorias(area)
       setCategorias(data)
     } finally {
       setLoading(false)
@@ -56,7 +57,7 @@ export default function CategoriasManager() {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await createCategoria(values.nombre)
+      await createCategoria(values.nombre, area)
       form.reset()
       loadCategorias()
     } catch (error) {
@@ -66,9 +67,8 @@ export default function CategoriasManager() {
 
   const handleDelete = async () => {
     if (!deleteId) return
-
     try {
-      await deleteCategoria(deleteId)
+      await deleteCategoria(deleteId, area)
       setDeleteId(null)
       loadCategorias()
     } catch (error) {

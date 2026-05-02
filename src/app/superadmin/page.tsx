@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../../components/ui/form"
 import { Input } from "../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog"
+import { Badge } from "../../components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,19 +26,21 @@ import {
 import { ArrowLeft, UserPlus, Shield, Edit, Trash2 } from "lucide-react"
 import { useAuth } from "../../contexts/AuthContext"
 import { createAdmin, getAllAdmins, updateAdmin, deleteAdmin } from "../../firebase/auth-service"
-import type { User } from "../../types/auth"
+import type { User, Area } from "../../types/auth"
 import { format } from "date-fns"
 
 const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
   cedula: z.string().min(5, { message: "La cédula debe tener al menos 5 caracteres" }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
+  area: z.enum(["cultura", "deporte"], { required_error: "Seleccione un área" }),
 })
 
 const editFormSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
   cedula: z.string().min(5, { message: "La cédula debe tener al menos 5 caracteres" }),
   password: z.string().optional(),
+  area: z.enum(["cultura", "deporte"]),
 })
 
 export default function SuperAdminPage() {
@@ -46,24 +50,16 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(true)
   const [editingAdmin, setEditingAdmin] = useState<User | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; area: Area } | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      nombre: "",
-      cedula: "",
-      password: "",
-    },
+    defaultValues: { nombre: "", cedula: "", password: "", area: "cultura" },
   })
 
   const editForm = useForm<z.infer<typeof editFormSchema>>({
     resolver: zodResolver(editFormSchema),
-    defaultValues: {
-      nombre: "",
-      cedula: "",
-      password: "",
-    },
+    defaultValues: { nombre: "", cedula: "", password: "", area: "cultura" },
   })
 
   useEffect(() => {
@@ -71,7 +67,6 @@ export default function SuperAdminPage() {
       router.push("/")
       return
     }
-
     loadAdmins()
   }, [role, router])
 
@@ -87,8 +82,8 @@ export default function SuperAdminPage() {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await createAdmin(values.nombre, values.cedula, values.password)
-      form.reset()
+      await createAdmin(values.nombre, values.cedula, values.password, values.area as Area)
+      form.reset({ nombre: "", cedula: "", password: "", area: "cultura" })
       loadAdmins()
     } catch (error) {
       console.error("Error al crear admin:", error)
@@ -101,15 +96,15 @@ export default function SuperAdminPage() {
       nombre: admin.nombre,
       cedula: admin.cedula,
       password: "",
+      area: admin.area ?? "cultura",
     })
     setIsEditDialogOpen(true)
   }
 
   async function handleEditSubmit(values: z.infer<typeof editFormSchema>) {
     if (!editingAdmin) return
-
     try {
-      await updateAdmin(editingAdmin.id, values.nombre, values.cedula, values.password)
+      await updateAdmin(editingAdmin.id, values.nombre, values.cedula, values.area as Area, values.password)
       setIsEditDialogOpen(false)
       setEditingAdmin(null)
       editForm.reset()
@@ -120,20 +115,17 @@ export default function SuperAdminPage() {
   }
 
   const handleDelete = async () => {
-    if (!deleteId) return
-
+    if (!deleteTarget) return
     try {
-      await deleteAdmin(deleteId)
-      setDeleteId(null)
+      await deleteAdmin(deleteTarget.id, deleteTarget.area)
+      setDeleteTarget(null)
       loadAdmins()
     } catch (error) {
       console.error("Error al eliminar admin:", error)
     }
   }
 
-  if (role !== "superadmin") {
-    return null
-  }
+  if (role !== "superadmin") return null
 
   return (
     <div className="min-h-screen bg-white">
@@ -173,7 +165,6 @@ export default function SuperAdminPage() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="cedula"
@@ -187,7 +178,6 @@ export default function SuperAdminPage() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="password"
@@ -201,7 +191,27 @@ export default function SuperAdminPage() {
                       </FormItem>
                     )}
                   />
-
+                  <FormField
+                    control={form.control}
+                    name="area"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Área</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione un área" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="cultura">Cultura</SelectItem>
+                            <SelectItem value="deporte">Deporte</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <Button type="submit" className="w-full">
                     <UserPlus className="mr-2 h-4 w-4" />
                     Crear Administrador
@@ -228,14 +238,15 @@ export default function SuperAdminPage() {
                       <TableRow>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Cédula</TableHead>
-                        <TableHead>Fecha Creación</TableHead>
-                        <TableHead className="w-[150px]">Acciones</TableHead>
+                        <TableHead>Área</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead className="w-[100px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {admins.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                             No hay administradores registrados
                           </TableCell>
                         </TableRow>
@@ -244,21 +255,21 @@ export default function SuperAdminPage() {
                           <TableRow key={admin.id}>
                             <TableCell className="font-medium">{admin.nombre}</TableCell>
                             <TableCell>{admin.cedula}</TableCell>
-                            <TableCell>{format(admin.fechaCreacion, "dd/MM/yyyy HH:mm")}</TableCell>
+                            <TableCell>
+                              <Badge variant={admin.area === "deporte" ? "default" : "secondary"}>
+                                {admin.area === "deporte" ? "Deporte" : "Cultura"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{format(admin.fechaCreacion, "dd/MM/yyyy")}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEdit(admin)}
-                                  title="Editar"
-                                >
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(admin)} title="Editar">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setDeleteId(admin.id)}
+                                  onClick={() => setDeleteTarget({ id: admin.id, area: admin.area ?? "cultura" })}
                                   title="Eliminar"
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
@@ -300,7 +311,6 @@ export default function SuperAdminPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={editForm.control}
                 name="cedula"
@@ -314,7 +324,6 @@ export default function SuperAdminPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={editForm.control}
                 name="password"
@@ -328,7 +337,27 @@ export default function SuperAdminPage() {
                   </FormItem>
                 )}
               />
-
+              <FormField
+                control={editForm.control}
+                name="area"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Área</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cultura">Cultura</SelectItem>
+                        <SelectItem value="deporte">Deporte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
                   Cancelar
@@ -342,13 +371,13 @@ export default function SuperAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de confirmación de eliminación */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      {/* Confirmación de eliminación */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El administrador será eliminado permanentemente del sistema.
+              Esta acción no se puede deshacer. El administrador será eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

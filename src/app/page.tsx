@@ -20,6 +20,7 @@ import {
   getAllEntries,
   addEntry as addEntryToFirebase,
   toggleEntryComplete,
+  updateEntryEstado,
   getFilteredEntries,
   getUniqueResponsables,
   updateEntry,
@@ -28,7 +29,9 @@ import {
 import { getAllAsistencias, addAsistencia } from "../firebase/asistencia-service"
 
 export default function BitacoraPage() {
-  const { role } = useAuth()
+  const { role, area } = useAuth()
+  const isDeporte = area === "deporte"
+
   const [entries, setEntries] = useState<BitacoraEntry[]>([])
   const [filteredEntries, setFilteredEntries] = useState<BitacoraEntry[]>([])
   const [asistencias, setAsistencias] = useState<AsistenciaEntry[]>([])
@@ -40,13 +43,14 @@ export default function BitacoraPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<string>("")
 
-  // Cargar entradas desde Firebase al iniciar
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [data, uniqueResponsables] = await Promise.all([getAllEntries(), getUniqueResponsables()])
-
+        const [data, uniqueResponsables] = await Promise.all([
+          getAllEntries(area),
+          getUniqueResponsables(area),
+        ])
         setEntries(data)
         setFilteredEntries(data)
         setResponsables(uniqueResponsables)
@@ -57,12 +61,12 @@ export default function BitacoraPage() {
         setLoading(false)
       }
     }
-
     fetchData()
-  }, [])
+  }, [area])
 
-  // Cargar asistencias desde Firebase
+  // Solo cargar asistencias para cultura
   useEffect(() => {
+    if (isDeporte) return
     const fetchAsistencias = async () => {
       try {
         setLoadingAsistencias(true)
@@ -75,28 +79,18 @@ export default function BitacoraPage() {
         setLoadingAsistencias(false)
       }
     }
-
     fetchAsistencias()
-  }, [])
+  }, [isDeporte])
 
   const addEntry = async (entry: Omit<BitacoraEntry, "id">) => {
     try {
-      const id = await addEntryToFirebase(entry)
-
-      const newEntry = {
-        ...entry,
-        id,
-      } as BitacoraEntry
-
-      // Actualizar el estado local con la nueva entrada
-      setEntries((prevEntries) => [newEntry, ...prevEntries])
-      setFilteredEntries((prevEntries) => [newEntry, ...prevEntries])
-
-      // Actualizar responsables si es necesario
+      const id = await addEntryToFirebase(entry, area)
+      const newEntry = { ...entry, id } as BitacoraEntry
+      setEntries((prev) => [newEntry, ...prev])
+      setFilteredEntries((prev) => [newEntry, ...prev])
       if (!responsables.includes(entry.responsable)) {
         setResponsables((prev) => [...prev, entry.responsable].sort())
       }
-
       toast.success("Registro añadido correctamente")
     } catch (error) {
       console.error("Error al añadir entrada:", error)
@@ -107,15 +101,7 @@ export default function BitacoraPage() {
   const addAsistenciaEntry = async (entry: Omit<AsistenciaEntry, "id">) => {
     try {
       const id = await addAsistencia(entry)
-
-      const newEntry = {
-        ...entry,
-        id,
-      } as AsistenciaEntry
-
-      // Actualizar el estado local con la nueva entrada
-      setAsistencias((prevEntries) => [newEntry, ...prevEntries])
-
+      setAsistencias((prev) => [{ ...entry, id } as AsistenciaEntry, ...prev])
       toast.success("Asistencia registrada correctamente")
     } catch (error) {
       console.error("Error al registrar asistencia:", error)
@@ -125,29 +111,29 @@ export default function BitacoraPage() {
 
   const handleToggleComplete = async (id: string) => {
     try {
-      // Encontrar la entrada actual y su estado
       const entry = entries.find((e) => e.id === id)
       if (!entry) return
-
-      // Actualizar en Firebase
-      await toggleEntryComplete(id, !entry.completada)
-
-      // Actualizar el estado local
-      const updatedEntries = entries.map((entry) =>
-        entry.id === id ? { ...entry, completada: !entry.completada } : entry,
-      )
-
-      setEntries(updatedEntries)
-
-      // También actualizar las entradas filtradas
-      setFilteredEntries((prevFiltered) =>
-        prevFiltered.map((entry) => (entry.id === id ? { ...entry, completada: !entry.completada } : entry)),
-      )
-
-      toast.success(`Tarea marcada como ${!entry.completada ? "completada" : "pendiente"}`)
+      await toggleEntryComplete(id, !entry.completada, area)
+      const update = (list: BitacoraEntry[]) =>
+        list.map((e) => (e.id === id ? { ...e, completada: !e.completada } : e))
+      setEntries(update)
+      setFilteredEntries(update)
     } catch (error) {
       console.error("Error al actualizar entrada:", error)
       toast.error("No se pudo actualizar el estado de la tarea")
+    }
+  }
+
+  const handleChangeEstado = async (id: string, estado: string) => {
+    try {
+      await updateEntryEstado(id, estado, area)
+      const update = (list: BitacoraEntry[]) =>
+        list.map((e) => (e.id === id ? { ...e, estado } : e))
+      setEntries(update)
+      setFilteredEntries(update)
+    } catch (error) {
+      console.error("Error al actualizar estado:", error)
+      toast.error("No se pudo actualizar el estado")
     }
   }
 
@@ -158,17 +144,11 @@ export default function BitacoraPage() {
 
   const handleUpdateEntry = async (updatedEntry: BitacoraEntry) => {
     try {
-      // Actualizar en Firebase
-      await updateEntry(updatedEntry)
-
-      // Actualizar el estado local
-      const updatedEntries = entries.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
-
-      setEntries(updatedEntries)
-      setFilteredEntries((prevFiltered) =>
-        prevFiltered.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry)),
-      )
-
+      await updateEntry(updatedEntry, area)
+      const update = (list: BitacoraEntry[]) =>
+        list.map((e) => (e.id === updatedEntry.id ? updatedEntry : e))
+      setEntries(update)
+      setFilteredEntries(update)
       setIsEditDialogOpen(false)
       setEditingEntry(null)
       toast.success("Registro actualizado correctamente")
@@ -180,12 +160,9 @@ export default function BitacoraPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEntry(id)
-
-      // Actualizar el estado local
-      setEntries((prevEntries) => prevEntries.filter((entry) => entry.id !== id))
-      setFilteredEntries((prevFiltered) => prevFiltered.filter((entry) => entry.id !== id))
-
+      await deleteEntry(id, area)
+      setEntries((prev) => prev.filter((e) => e.id !== id))
+      setFilteredEntries((prev) => prev.filter((e) => e.id !== id))
       toast.success("Registro eliminado correctamente")
     } catch (error) {
       console.error("Error al eliminar entrada:", error)
@@ -193,42 +170,26 @@ export default function BitacoraPage() {
     }
   }
 
-  // Verificar si una tarea está vencida (fecha de entrega pasada y no completada)
-  const isOverdue = (entry: BitacoraEntry) => {
-    return !entry.completada && new Date(entry.fechaEntrega) < new Date()
-  }
+  const isOverdue = (entry: BitacoraEntry) =>
+    !entry.completada && new Date(entry.fechaEntrega) < new Date()
 
   const handleFilter = async (responsable: string | null, estado: string | null, vencidas: boolean) => {
     try {
       setLoading(true)
-
       if (!responsable && !estado && !vencidas) {
-        // Si no hay filtros, mostrar todas las entradas
         setFilteredEntries(entries)
       } else {
-        // Filtrar localmente si ya tenemos los datos
-        if (entries.length > 0) {
-          let filtered = [...entries]
-
-          if (responsable) {
-            filtered = filtered.filter((entry) => entry.responsable === responsable)
+        let filtered = [...entries]
+        if (responsable) filtered = filtered.filter((e) => e.responsable === responsable)
+        if (estado) {
+          if (isDeporte) {
+            filtered = filtered.filter((e) => e.estado === estado)
+          } else {
+            filtered = filtered.filter((e) => (estado === "completada" ? e.completada : !e.completada))
           }
-
-          if (estado) {
-            filtered = filtered.filter((entry) => (estado === "completada" ? entry.completada : !entry.completada))
-          }
-
-          if (vencidas) {
-            filtered = filtered.filter(isOverdue)
-          }
-
-          setFilteredEntries(filtered)
-        } else {
-          // O consultar a Firebase si es necesario
-          const filtered = await getFilteredEntries(responsable, estado)
-          // Aplicar filtro de vencidas localmente
-          setFilteredEntries(vencidas ? filtered.filter(isOverdue) : filtered)
         }
+        if (vencidas) filtered = filtered.filter(isOverdue)
+        setFilteredEntries(filtered)
       }
     } catch (error) {
       console.error("Error al filtrar entradas:", error)
@@ -237,6 +198,11 @@ export default function BitacoraPage() {
       setLoading(false)
     }
   }
+
+  // Número de columnas del TabsList
+  const tabCols = role === "guest"
+    ? (isDeporte ? 1 : 2)
+    : (isDeporte ? 3 : 4)
 
   return (
     <>
@@ -249,11 +215,11 @@ export default function BitacoraPage() {
             onValueChange={setActiveTab}
             className="w-full flex-grow flex flex-col"
           >
-            <TabsList className={`grid w-full ${role === "guest" ? "grid-cols-2" : "grid-cols-4"}`}>
+            <TabsList className={`grid w-full grid-cols-${tabCols}`}>
               {role !== "guest" && <TabsTrigger value="form">Nuevo Registro</TabsTrigger>}
               <TabsTrigger value="entries">Ver Registros</TabsTrigger>
               {role !== "guest" && <TabsTrigger value="stats">Estadísticas</TabsTrigger>}
-              <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+              {!isDeporte && <TabsTrigger value="asistencia">Asistencia</TabsTrigger>}
             </TabsList>
 
             {role !== "guest" && (
@@ -261,10 +227,10 @@ export default function BitacoraPage() {
                 <Card className="h-full">
                   <CardHeader>
                     <CardTitle>Nuevo Registro en Bitácora</CardTitle>
-                    <CardDescription>Complete el formulario para añadir un nuevo registro a la bitácora.</CardDescription>
+                    <CardDescription>Complete el formulario para añadir un nuevo registro.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <BitacoraForm onSubmit={addEntry} />
+                    <BitacoraForm onSubmit={addEntry} area={area} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -274,23 +240,28 @@ export default function BitacoraPage() {
               <Card className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>Registros de la Bitácora</CardTitle>
-                  <CardDescription>Visualice y filtre los registros guardados en la bitácora.</CardDescription>
+                  <CardDescription>Visualice y filtre los registros guardados.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
-                  <BitacoraFilter responsables={responsables} onFilter={handleFilter} />
-
+                  <BitacoraFilter
+                    responsables={responsables}
+                    onFilter={handleFilter}
+                    area={area}
+                  />
                   {loading ? (
                     <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                     </div>
                   ) : (
                     <div className="flex-grow">
                       <BitacoraTable
                         entries={filteredEntries}
-                        onToggleComplete={role !== "guest" ? handleToggleComplete : undefined}
+                        onToggleComplete={role !== "guest" && !isDeporte ? handleToggleComplete : undefined}
+                        onChangeEstado={role !== "guest" && isDeporte ? handleChangeEstado : undefined}
                         onEdit={role !== "guest" ? handleEdit : undefined}
                         onDelete={role !== "guest" ? handleDelete : undefined}
                         isGuest={role === "guest"}
+                        area={area}
                       />
                     </div>
                   )}
@@ -303,7 +274,7 @@ export default function BitacoraPage() {
                 <Card className="h-full">
                   {loading ? (
                     <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                     </div>
                   ) : (
                     <BitacoraStats entries={entries} />
@@ -312,48 +283,55 @@ export default function BitacoraPage() {
               </TabsContent>
             )}
 
-            <TabsContent value="asistencia" className="flex-grow">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Registrar Asistencia</CardTitle>
-                    <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AsistenciaForm 
-                      onSubmit={addAsistenciaEntry} 
-                      onNameChange={(name) => setSelectedPerson(name)}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card className="flex flex-col">
-                  <CardHeader>
-                    <CardTitle>Estadisticas de Asistencia</CardTitle>
-                    <CardDescription>Consulte las horas trabajadas por monitor.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow overflow-auto">
-                    {loadingAsistencias ? (
-                      <div className="flex justify-center py-8">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                      </div>
-                    ) : (
-                      <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+            {!isDeporte && (
+              <TabsContent value="asistencia" className="flex-grow">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Registrar Asistencia</CardTitle>
+                      <CardDescription>Registre la asistencia seleccionando el nombre, fecha y hora.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AsistenciaForm
+                        onSubmit={addAsistenciaEntry}
+                        onNameChange={(name) => setSelectedPerson(name)}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className="flex flex-col">
+                    <CardHeader>
+                      <CardTitle>Estadísticas de Asistencia</CardTitle>
+                      <CardDescription>Consulte las horas trabajadas por monitor.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow overflow-auto">
+                      {loadingAsistencias ? (
+                        <div className="flex justify-center py-8">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+                        </div>
+                      ) : (
+                        <AsistenciaStats entries={asistencias} selectedPerson={selectedPerson} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
 
-          {/* Diálogo de edición */}
           {role !== "guest" && (
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>Editar Registro</DialogTitle>
                 </DialogHeader>
-                {editingEntry && <BitacoraForm onSubmit={handleUpdateEntry} initialData={editingEntry} isEditing={true} />}
+                {editingEntry && (
+                  <BitacoraForm
+                    onSubmit={handleUpdateEntry}
+                    initialData={editingEntry}
+                    isEditing={true}
+                    area={area}
+                  />
+                )}
               </DialogContent>
             </Dialog>
           )}

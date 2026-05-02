@@ -1,24 +1,25 @@
 import { collection, addDoc, getDocs, query, where, Timestamp, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { toast } from "sonner"
-import { db } from "./config"
-import type { User } from "../types/auth"
+import { culturaDb, deporteDb } from "./config"
+import type { User, Area } from "../types/auth"
 import { SUPER_ADMIN_CREDENTIALS } from "../constants/superadmin"
 
 const COLLECTION_NAME = "admins"
 
 // Convertir datos de Firestore a User
-const convertFromFirestore = (doc: any): User => {
-  const data = doc.data()
+const convertFromFirestore = (docSnap: any): User => {
+  const data = docSnap.data()
   return {
-    id: doc.id,
+    id: docSnap.id,
     nombre: data.nombre,
     cedula: data.cedula,
     role: "admin",
+    area: (data.area as Area) ?? "cultura",
     fechaCreacion: data.fechaCreacion.toDate(),
   }
 }
 
-// Login
+// Login — busca en ambas bases de datos
 export const login = async (cedula: string, password: string): Promise<User | null> => {
   try {
     // Verificar si es Super Admin
@@ -28,23 +29,32 @@ export const login = async (cedula: string, password: string): Promise<User | nu
         nombre: SUPER_ADMIN_CREDENTIALS.nombre,
         cedula: SUPER_ADMIN_CREDENTIALS.cedula,
         role: "superadmin",
+        area: "cultura",
         fechaCreacion: new Date(),
       }
     }
 
-    // Buscar en admins de Firebase
-    const q = query(collection(db, COLLECTION_NAME), where("cedula", "==", cedula), where("password", "==", password))
-    const querySnapshot = await getDocs(q)
-
-    if (querySnapshot.empty) {
-      toast.error("Credenciales incorrectas")
-      return null
+    // Buscar en cultura primero, luego en deporte
+    for (const { db, area } of [
+      { db: culturaDb, area: "cultura" as Area },
+      { db: deporteDb, area: "deporte" as Area },
+    ]) {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where("cedula", "==", cedula),
+        where("password", "==", password),
+      )
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        const user = convertFromFirestore(snap.docs[0])
+        // Usar el área guardada en el documento (tiene precedencia sobre la DB donde se encontró)
+        toast.success(`Bienvenido ${user.nombre}`)
+        return user
+      }
     }
 
-    const adminDoc = querySnapshot.docs[0]
-    const user = convertFromFirestore(adminDoc)
-    toast.success(`Bienvenido ${user.nombre}`)
-    return user
+    toast.error("Credenciales incorrectas")
+    return null
   } catch (error) {
     console.error("Error al iniciar sesión:", error)
     toast.error("Error al iniciar sesión")
@@ -52,15 +62,22 @@ export const login = async (cedula: string, password: string): Promise<User | nu
   }
 }
 
-// Crear admin (solo Super Admin)
-export const createAdmin = async (nombre: string, cedula: string, password: string): Promise<string> => {
+// Crear admin (solo Super Admin) — guarda en la DB del área correspondiente
+export const createAdmin = async (
+  nombre: string,
+  cedula: string,
+  password: string,
+  area: Area = "cultura",
+): Promise<string> => {
   try {
-    // Verificar si ya existe
-    const q = query(collection(db, COLLECTION_NAME), where("cedula", "==", cedula))
-    const querySnapshot = await getDocs(q)
+    const db = area === "deporte" ? deporteDb : culturaDb
 
-    if (!querySnapshot.empty) {
-      toast.error("Ya existe un administrador con esta cédula")
+    // Verificar si ya existe en esa área
+    const q = query(collection(db, COLLECTION_NAME), where("cedula", "==", cedula))
+    const snap = await getDocs(q)
+
+    if (!snap.empty) {
+      toast.error("Ya existe un administrador con esta cédula en esa área")
       throw new Error("Admin already exists")
     }
 
@@ -68,6 +85,7 @@ export const createAdmin = async (nombre: string, cedula: string, password: stri
       nombre,
       cedula,
       password,
+      area,
       fechaCreacion: Timestamp.fromDate(new Date()),
     })
 
@@ -80,11 +98,17 @@ export const createAdmin = async (nombre: string, cedula: string, password: stri
   }
 }
 
-// Obtener todos los admins
+// Obtener todos los admins de ambas áreas
 export const getAllAdmins = async (): Promise<User[]> => {
   try {
-    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
-    return querySnapshot.docs.map(convertFromFirestore)
+    const [culturaSnap, deporteSnap] = await Promise.all([
+      getDocs(collection(culturaDb, COLLECTION_NAME)),
+      getDocs(collection(deporteDb, COLLECTION_NAME)),
+    ])
+    return [
+      ...culturaSnap.docs.map(convertFromFirestore),
+      ...deporteSnap.docs.map(convertFromFirestore),
+    ]
   } catch (error) {
     console.error("Error al obtener admins:", error)
     toast.error("No se pudieron cargar los administradores")
@@ -92,20 +116,21 @@ export const getAllAdmins = async (): Promise<User[]> => {
   }
 }
 
-// Actualizar admin
-export const updateAdmin = async (id: string, nombre: string, cedula: string, password?: string): Promise<void> => {
+// Actualizar admin — busca en la DB correcta según área
+export const updateAdmin = async (
+  id: string,
+  nombre: string,
+  cedula: string,
+  area: Area,
+  password?: string,
+): Promise<void> => {
   try {
+    const db = area === "deporte" ? deporteDb : culturaDb
     const adminRef = doc(db, COLLECTION_NAME, id)
-    const updateData: any = {
-      nombre,
-      cedula,
-    }
-    
-    // Solo actualizar contraseña si se proporciona
+    const updateData: any = { nombre, cedula, area }
     if (password && password.trim() !== "") {
       updateData.password = password
     }
-    
     await updateDoc(adminRef, updateData)
     toast.success("Administrador actualizado correctamente")
   } catch (error) {
@@ -115,9 +140,10 @@ export const updateAdmin = async (id: string, nombre: string, cedula: string, pa
   }
 }
 
-// Eliminar admin
-export const deleteAdmin = async (id: string): Promise<void> => {
+// Eliminar admin — busca en ambas DBs
+export const deleteAdmin = async (id: string, area: Area): Promise<void> => {
   try {
+    const db = area === "deporte" ? deporteDb : culturaDb
     await deleteDoc(doc(db, COLLECTION_NAME, id))
     toast.success("Administrador eliminado correctamente")
   } catch (error) {

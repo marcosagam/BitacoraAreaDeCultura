@@ -1,18 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { ArrowLeft, Settings } from "lucide-react"
+import { Button } from "../../components/ui/button"
 import { useAuth } from "../../contexts/AuthContext"
 import ResponsablesManager from "../../components/responsables-manager"
 import CategoriasManager from "../../components/categorias-manager"
+import EstadosManager from "../../components/estados-manager"
 
 export default function AdminPage() {
   const router = useRouter()
-  const { role } = useAuth()
+  const { role, area } = useAuth()
 
   useEffect(() => {
     if (role !== "admin" && role !== "superadmin") {
@@ -20,9 +20,9 @@ export default function AdminPage() {
     }
   }, [role, router])
 
-  if (role !== "admin" && role !== "superadmin") {
-    return null
-  }
+  if (role !== "admin" && role !== "superadmin") return null
+
+  const isDeporte = area === "deporte"
 
   return (
     <div className="min-h-screen bg-white">
@@ -38,18 +38,25 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="responsables" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={`grid w-full ${isDeporte ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="responsables">Responsables</TabsTrigger>
             <TabsTrigger value="categorias">Categorías</TabsTrigger>
+            {isDeporte && <TabsTrigger value="estados">Estados</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="responsables">
-            <ResponsablesManager />
+            <ResponsablesManager area={area} />
           </TabsContent>
 
           <TabsContent value="categorias">
-            <CategoriasManager />
+            <CategoriasManager area={area} />
           </TabsContent>
+
+          {isDeporte && (
+            <TabsContent value="estados">
+              <EstadosManager />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

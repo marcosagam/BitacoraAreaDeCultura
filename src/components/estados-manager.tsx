@@ -19,37 +19,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog"
-import { UserPlus, Trash2 } from "lucide-react"
-import { getAllResponsables, createResponsable, deleteResponsable } from "../firebase/responsable-service"
-import type { Responsable } from "../types/responsable"
-import type { Area } from "../types/auth"
+import { ListChecks, Trash2 } from "lucide-react"
+import { getAllEstados, createEstado, deleteEstado } from "../firebase/estado-service"
+import type { Estado } from "../types/estado"
 import { format } from "date-fns"
 
 const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
 })
 
-export default function ResponsablesManager({ area = "cultura" }: { area?: Area }) {
-  const [responsables, setResponsables] = useState<Responsable[]>([])
+export default function EstadosManager() {
+  const [estados, setEstados] = useState<Estado[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      nombre: "",
-    },
+    defaultValues: { nombre: "" },
   })
 
-  useEffect(() => {
-    loadResponsables()
-  }, [])
+  useEffect(() => { loadEstados() }, [])
 
-  const loadResponsables = async () => {
+  const loadEstados = async () => {
     try {
       setLoading(true)
-      const data = await getAllResponsables(area)
-      setResponsables(data)
+      setEstados(await getAllEstados())
     } finally {
       setLoading(false)
     }
@@ -57,22 +51,22 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await createResponsable(values.nombre, area)
+      await createEstado(values.nombre)
       form.reset()
-      loadResponsables()
+      loadEstados()
     } catch (error) {
-      console.error("Error al crear responsable:", error)
+      console.error("Error al crear estado:", error)
     }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     try {
-      await deleteResponsable(deleteId, area)
+      await deleteEstado(deleteId)
       setDeleteId(null)
-      loadResponsables()
+      loadEstados()
     } catch (error) {
-      console.error("Error al eliminar responsable:", error)
+      console.error("Error al eliminar estado:", error)
     }
   }
 
@@ -81,10 +75,10 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Crear Responsable
+            <ListChecks className="h-5 w-5" />
+            Crear Estado
           </CardTitle>
-          <CardDescription>Agregue nuevos responsables para asignar tareas</CardDescription>
+          <CardDescription>Defina los estados posibles para las tareas de deporte</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -94,18 +88,17 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
                 name="nombre"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormLabel>Nombre del Estado</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej: JUAN PÉREZ GARCÍA" {...field} />
+                      <Input placeholder="Ej: En revisión" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <Button type="submit" className="w-full">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Crear Responsable
+                <ListChecks className="mr-2 h-4 w-4" />
+                Crear Estado
               </Button>
             </form>
           </Form>
@@ -114,13 +107,13 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Responsables</CardTitle>
-          <CardDescription>Responsables registrados en el sistema</CardDescription>
+          <CardTitle>Estados Registrados</CardTitle>
+          <CardDescription>Estados disponibles para clasificar tareas</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -128,28 +121,26 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Fecha Creación</TableHead>
-                    <TableHead className="w-[100px]">Acciones</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead className="w-[80px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {responsables.length === 0 ? (
+                  {estados.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
-                        No hay responsables registrados
+                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        No hay estados registrados
                       </TableCell>
                     </TableRow>
                   ) : (
-                    responsables.map((responsable) => (
-                      <TableRow key={responsable.id}>
-                        <TableCell className="font-medium">{responsable.nombre}</TableCell>
-                        <TableCell>{format(responsable.fechaCreacion, "dd/MM/yyyy")}</TableCell>
+                    estados.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{e.nombre}</TableCell>
+                        <TableCell className="text-sm text-gray-600">{e.valor}</TableCell>
+                        <TableCell>{format(e.fechaCreacion, "dd/MM/yyyy")}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setDeleteId(responsable.id)}
-                          >
+                          <Button variant="destructive" size="sm" onClick={() => setDeleteId(e.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -168,7 +159,7 @@ export default function ResponsablesManager({ area = "cultura" }: { area?: Area 
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El responsable será eliminado permanentemente.
+              Esta acción no se puede deshacer. El estado será eliminado permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

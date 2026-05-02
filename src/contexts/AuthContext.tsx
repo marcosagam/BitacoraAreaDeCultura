@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { User, UserRole, AuthState } from "../types/auth"
+import type { User, UserRole, Area, AuthState } from "../types/auth"
 
 interface AuthContextType extends AuthState {
   login: (user: User) => void
@@ -15,6 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: null,
     isAuthenticated: false,
     role: "guest",
+    area: "cultura",
   })
 
   // Cargar usuario desde localStorage al iniciar
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user,
           isAuthenticated: true,
           role: user.role,
+          area: user.area ?? "cultura",
         })
       } catch (error) {
         console.error("Error al cargar usuario:", error)
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: true,
       role: user.role,
+      area: user.area ?? "cultura",
     })
     localStorage.setItem("user", JSON.stringify(user))
   }
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: null,
       isAuthenticated: false,
       role: "guest",
+      area: "cultura",
     })
     localStorage.removeItem("user")
   }

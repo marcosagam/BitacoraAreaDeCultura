@@ -44,17 +44,15 @@ export default function BitacoraTable({
 }: BitacoraTableProps) {
   const isDeporte = area === "deporte"
   const [estados, setEstados] = useState<Estado[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedEntry, setSelectedEntry] = useState<BitacoraEntry | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     if (isDeporte) {
       getAllEstados().then(setEstados).catch(console.error)
     }
   }, [isDeporte])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedEntry, setSelectedEntry] = useState<BitacoraEntry | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedEntry, setSelectedEntry] = useState<BitacoraEntry | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
   const itemsPerPage = 13
   const totalPages = Math.ceil(entries.length / itemsPerPage)
 

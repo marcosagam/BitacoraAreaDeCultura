@@ -133,3 +133,45 @@ export const getUniqueResponsables = async (area: Area = "cultura"): Promise<str
     return []
   }
 }
+
+export const getEntriesByTimeFilter = async (
+  timeFilter: "all" | "day" | "week" | "month",
+  area: Area = "cultura"
+): Promise<BitacoraEntry[]> => {
+  try {
+    const db = getDbForArea(area)
+    const constraints: QueryConstraint[] = []
+
+    if (timeFilter !== "all") {
+      const now = new Date()
+      let startDate: Date
+
+      switch (timeFilter) {
+        case "day":
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          break
+        case "week":
+          const dayOfWeek = now.getDay()
+          const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff)
+          break
+        case "month":
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          break
+        default:
+          startDate = new Date(0)
+      }
+
+      constraints.push(where("fechaCreacion", ">=", Timestamp.fromDate(startDate)))
+    }
+
+    constraints.push(orderBy("fechaCreacion", "desc"))
+    const q = query(collection(db, COLLECTION_NAME), ...constraints)
+    const snap = await getDocs(q)
+    return snap.docs.map(convertFromFirestore)
+  } catch (error) {
+    console.error("Error al obtener entradas por filtro de tiempo:", error)
+    toast.error("No se pudieron cargar los registros filtrados")
+    return []
+  }
+}

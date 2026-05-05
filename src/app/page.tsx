@@ -280,7 +280,7 @@ export default function BitacoraPage() {
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                     </div>
                   ) : (
-                    <BitacoraStats entries={entries} />
+                    <BitacoraStats entries={entries} area={area} />
                   )}
                 </Card>
               </TabsContent>

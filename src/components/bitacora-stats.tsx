@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Button } from "../components/ui/button"
 import { toast } from "sonner"
 import type { BitacoraEntry } from "../types/bitacora"
+import type { Area } from "../types/auth"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import BitacoraTable from "../components/bitacora-table"
@@ -14,11 +15,12 @@ import { getEntriesByTimeFilter } from "../firebase/bitacora-service"
 
 interface BitacoraStatsProps {
   entries: BitacoraEntry[]
+  area?: Area
 }
 
 type TimeFilter = "all" | "day" | "week" | "month"
 
-export default function BitacoraStats({ entries: initialEntries }: BitacoraStatsProps) {
+export default function BitacoraStats({ entries: initialEntries, area = "cultura" }: BitacoraStatsProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all")
   const [entries, setEntries] = useState<BitacoraEntry[]>(initialEntries)
   const [loading, setLoading] = useState(false)
@@ -29,7 +31,7 @@ export default function BitacoraStats({ entries: initialEntries }: BitacoraStats
     const fetchFilteredEntries = async () => {
       try {
         setLoading(true)
-        const data = await getEntriesByTimeFilter(timeFilter)
+        const data = await getEntriesByTimeFilter(timeFilter, area)
         setEntries(data)
       } catch (error) {
         console.error("Error al cargar entradas filtradas:", error)
@@ -40,7 +42,7 @@ export default function BitacoraStats({ entries: initialEntries }: BitacoraStats
     }
 
     fetchFilteredEntries()
-  }, [timeFilter])
+  }, [timeFilter, area])
 
   const responsableStats = useMemo(() => {
     const stats = new Map<string, { total: number; completadas: number }>()

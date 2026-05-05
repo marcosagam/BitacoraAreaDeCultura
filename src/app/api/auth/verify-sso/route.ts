@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       cedula: string
       role: string
       platform: string
+      area?: string
     }
 
     return NextResponse.json({
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
       nombre: payload.nombre,
       cedula: payload.cedula,
       role: payload.role,
+      area: payload.area ?? "cultura",
     })
   } catch (err) {
     const message = (err as Error).message ?? ""

@@ -199,10 +199,13 @@ export default function BitacoraPage() {
     }
   }
 
-  // Número de columnas del TabsList
-  const tabCols = role === "guest"
-    ? (isDeporte ? 1 : 2)
-    : (isDeporte ? 3 : 4)
+  // Clases de grid para TabsList (Tailwind requiere clases completas)
+  const getTabsGridClass = () => {
+    if (role === "guest") {
+      return isDeporte ? "grid w-full grid-cols-1" : "grid w-full grid-cols-2"
+    }
+    return isDeporte ? "grid w-full grid-cols-3" : "grid w-full grid-cols-4"
+  }
 
   return (
     <>
@@ -215,7 +218,7 @@ export default function BitacoraPage() {
             onValueChange={setActiveTab}
             className="w-full flex-grow flex flex-col"
           >
-            <TabsList className={`grid w-full grid-cols-${tabCols}`}>
+            <TabsList className={getTabsGridClass()}>
               {role !== "guest" && <TabsTrigger value="form">Nuevo Registro</TabsTrigger>}
               <TabsTrigger value="entries">Ver Registros</TabsTrigger>
               {role !== "guest" && <TabsTrigger value="stats">Estadísticas</TabsTrigger>}

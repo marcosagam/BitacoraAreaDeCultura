@@ -36,6 +36,7 @@ function SSOHandler() {
           nombre: data.nombre,
           cedula: data.cedula,
           role: data.role,
+          area: data.area ?? "cultura",
           fechaCreacion: new Date(),
         }
 

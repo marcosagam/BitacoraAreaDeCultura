@@ -26,6 +26,7 @@ import { format } from "date-fns"
 
 const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
+  color: z.string().min(4, { message: "Seleccione un color" }),
 })
 
 export default function EstadosManager() {
@@ -35,7 +36,10 @@ export default function EstadosManager() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { nombre: "" },
+    defaultValues: { 
+      nombre: "",
+      color: "#3b82f6"
+    },
   })
 
   useEffect(() => { loadEstados() }, [])
@@ -51,7 +55,7 @@ export default function EstadosManager() {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await createEstado(values.nombre)
+      await createEstado(values.nombre, values.color)
       form.reset()
       loadEstados()
     } catch (error) {
@@ -96,6 +100,33 @@ export default function EstadosManager() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color del Estado</FormLabel>
+                    <div className="flex gap-3 items-center">
+                      <FormControl>
+                        <Input
+                          type="color"
+                          {...field}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                      </FormControl>
+                      <div className="flex-1">
+                        <div 
+                          className="h-10 rounded-md border flex items-center justify-center font-medium text-white"
+                          style={{ backgroundColor: field.value }}
+                        >
+                          Vista previa
+                        </div>
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full">
                 <ListChecks className="mr-2 h-4 w-4" />
                 Crear Estado
@@ -122,6 +153,7 @@ export default function EstadosManager() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Valor</TableHead>
+                    <TableHead className="w-[120px]">Color</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead className="w-[80px]">Acciones</TableHead>
                   </TableRow>
@@ -129,7 +161,7 @@ export default function EstadosManager() {
                 <TableBody>
                   {estados.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                         No hay estados registrados
                       </TableCell>
                     </TableRow>
@@ -138,6 +170,14 @@ export default function EstadosManager() {
                       <TableRow key={e.id}>
                         <TableCell className="font-medium">{e.nombre}</TableCell>
                         <TableCell className="text-sm text-gray-600">{e.valor}</TableCell>
+                        <TableCell>
+                          <div 
+                            className="h-8 rounded-md border flex items-center justify-center text-xs font-medium text-white"
+                            style={{ backgroundColor: e.color }}
+                          >
+                            {e.color}
+                          </div>
+                        </TableCell>
                         <TableCell>{format(e.fechaCreacion, "dd/MM/yyyy")}</TableCell>
                         <TableCell>
                           <Button variant="destructive" size="sm" onClick={() => setDeleteId(e.id)}>

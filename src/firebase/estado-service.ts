@@ -15,6 +15,7 @@ const convertFromFirestore = (docSnap: any): Estado => {
     id: docSnap.id,
     nombre: data.nombre,
     valor: data.valor,
+    color: data.color,
     fechaCreacion: data.fechaCreacion.toDate(),
   }
 }
@@ -40,12 +41,13 @@ export const getAllEstados = async (): Promise<Estado[]> => {
   }
 }
 
-export const createEstado = async (nombre: string): Promise<string> => {
+export const createEstado = async (nombre: string, color: string): Promise<string> => {
   try {
     const valor = generateValor(nombre)
     const docRef = await addDoc(collection(deporteDb, COLLECTION_NAME), {
       nombre: nombre.toUpperCase(),
       valor,
+      color,
       fechaCreacion: Timestamp.fromDate(new Date()),
     })
     toast.success("Estado creado correctamente")

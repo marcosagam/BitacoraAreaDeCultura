@@ -115,6 +115,12 @@ export default function BitacoraTable({
     return found ? found.nombre : valor
   }
 
+  const getEstadoColor = (valor?: string): string | null => {
+    if (!valor) return null
+    const found = estados.find((e) => e.valor === valor)
+    return found ? found.color : null
+  }
+
   const isOverdue = (entry: BitacoraEntry) => {
     return !entry.completada && new Date(entry.fechaEntrega) < new Date()
   }
@@ -162,86 +168,90 @@ export default function BitacoraTable({
   // Vista móvil (tarjetas)
   const MobileView = () => (
     <div className="space-y-4 md:hidden">
-      {getCurrentEntries().map((entry) => (
-        <div
-          key={entry.id}
-          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-            isDeporte
-              ? "bg-blue-50 border-blue-200"
-              : isOverdue(entry)
-                ? "bg-red-50 border-red-300"
-                : entry.completada
-                  ? "bg-green-50 border-green-300"
-                  : "bg-yellow-50 border-yellow-300"
-          }`}
-          onClick={() => isGuest && setSelectedEntry(entry)}
-        >
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-bold text-lg flex-1">{entry.titulo}</h3>
-            {!isGuest && (
-              <div className="flex items-center gap-1">
-                {onEdit && (
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(entry) }} title="Editar">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                )}
-                {onToggleComplete && !isDeporte && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); onToggleComplete(entry.id) }}
-                    title={entry.completada ? "Marcar pendiente" : "Marcar completada"}
-                  >
-                    {entry.completada ? (
-                      <XCircle className="h-4 w-4 text-orange-600" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    )}
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setDeleteId(entry.id) }}
-                    title="Eliminar"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+      {getCurrentEntries().map((entry) => {
+        const estadoColor = isDeporte && entry.estado ? getEstadoColor(entry.estado) : null
+        const cardBgColor = estadoColor 
+          ? `rgba(${parseInt(estadoColor.slice(1, 3), 16)}, ${parseInt(estadoColor.slice(3, 5), 16)}, ${parseInt(estadoColor.slice(5, 7), 16)}, 0.1)`
+          : (isDeporte ? "bg-blue-50" : isOverdue(entry) ? "bg-red-50" : entry.completada ? "bg-green-50" : "bg-yellow-50")
+        const borderColor = estadoColor || (isDeporte ? "border-blue-200" : isOverdue(entry) ? "border-red-300" : entry.completada ? "border-green-300" : "border-yellow-300")
+        
+        return (
+          <div
+            key={entry.id}
+            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${!estadoColor ? cardBgColor : ""} ${!estadoColor ? borderColor : ""}`}
+            style={estadoColor ? { 
+              backgroundColor: cardBgColor,
+              borderColor: estadoColor
+            } : undefined}
+            onClick={() => isGuest && setSelectedEntry(entry)}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="font-bold text-lg flex-1">{entry.titulo}</h3>
+              {!isGuest && (
+                <div className="flex items-center gap-1">
+                  {onEdit && (
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(entry) }} title="Editar">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onToggleComplete && !isDeporte && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); onToggleComplete(entry.id) }}
+                      title={entry.completada ? "Marcar pendiente" : "Marcar completada"}
+                    >
+                      {entry.completada ? (
+                        <XCircle className="h-4 w-4 text-orange-600" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      )}
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(entry.id) }}
+                      title="Eliminar"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Fecha:</span>
+                <span className="font-medium">{format(new Date(entry.fecha), "dd/MM/yyyy")}</span>
               </div>
-            )}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Entrega:</span>
+                <span className="font-medium">{format(new Date(entry.fechaEntrega), "dd/MM/yyyy")}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Responsable:</span>
+                <span className="font-medium text-right">{entry.responsable}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Categoría:</span>
+                <Badge className={getCategoryBadge(entry.categoria)}>{getCategoryLabel(entry.categoria)}</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Estado:</span>
+                <div onClick={(e) => e.stopPropagation()}>{renderEstado(entry)}</div>
+              </div>
+              {!isDeporte && isOverdue(entry) && (
+                <Badge variant="destructive" className="w-full justify-center">
+                  VENCIDA
+                </Badge>
+              )}
+            </div>
           </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Fecha:</span>
-              <span className="font-medium">{format(new Date(entry.fecha), "dd/MM/yyyy")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Entrega:</span>
-              <span className="font-medium">{format(new Date(entry.fechaEntrega), "dd/MM/yyyy")}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Responsable:</span>
-              <span className="font-medium text-right">{entry.responsable}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Categoría:</span>
-              <Badge className={getCategoryBadge(entry.categoria)}>{getCategoryLabel(entry.categoria)}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Estado:</span>
-              <div onClick={(e) => e.stopPropagation()}>{renderEstado(entry)}</div>
-            </div>
-            {!isDeporte && isOverdue(entry) && (
-              <Badge variant="destructive" className="w-full justify-center">
-                VENCIDA
-              </Badge>
-            )}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 
@@ -270,44 +280,43 @@ export default function BitacoraTable({
                 </TableCell>
               </TableRow>
             ) : (
-              getCurrentEntries().map((entry) => (
-                <TableRow
-                  key={entry.id}
-                  className={`${
-                    isDeporte
-                      ? "bg-blue-50"
-                      : isOverdue(entry)
-                        ? "bg-red-100"
-                        : entry.completada
-                          ? "bg-green-50"
-                          : "bg-yellow-50"
-                  } ${isGuest ? "cursor-pointer hover:bg-opacity-80" : ""}`}
-                  onClick={() => isGuest && setSelectedEntry(entry)}
-                >
-                  <TableCell className="whitespace-nowrap">{format(new Date(entry.fecha), "dd/MM/yyyy")}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {format(new Date(entry.fechaEntrega), "dd/MM/yyyy")}
-                    {!isDeporte && isOverdue(entry) && (
-                      <Badge variant="destructive" className="ml-2">Vencida</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium truncate max-w-[250px]" title={entry.titulo}>
-                      {entry.titulo}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 truncate max-w-[250px]" title={entry.descripcion}>
-                      {entry.descripcion}
-                    </div>
-                  </TableCell>
-                  <TableCell className="truncate max-w-[180px]" title={entry.responsable}>
-                    {entry.responsable}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getCategoryBadge(entry.categoria)}>{getCategoryLabel(entry.categoria)}</Badge>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {renderEstado(entry)}
-                  </TableCell>
+              getCurrentEntries().map((entry) => {
+                const estadoColor = isDeporte && entry.estado ? getEstadoColor(entry.estado) : null
+                const rowBgColor = estadoColor 
+                  ? `rgba(${parseInt(estadoColor.slice(1, 3), 16)}, ${parseInt(estadoColor.slice(3, 5), 16)}, ${parseInt(estadoColor.slice(5, 7), 16)}, 0.1)`
+                  : (isDeporte ? "bg-blue-50" : isOverdue(entry) ? "bg-red-100" : entry.completada ? "bg-green-50" : "bg-yellow-50")
+                
+                return (
+                  <TableRow
+                    key={entry.id}
+                    className={`${!estadoColor ? rowBgColor : ""} ${isGuest ? "cursor-pointer hover:bg-opacity-80" : ""}`}
+                    style={estadoColor ? { backgroundColor: rowBgColor } : undefined}
+                    onClick={() => isGuest && setSelectedEntry(entry)}
+                  >
+                    <TableCell className="whitespace-nowrap">{format(new Date(entry.fecha), "dd/MM/yyyy")}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {format(new Date(entry.fechaEntrega), "dd/MM/yyyy")}
+                      {!isDeporte && isOverdue(entry) && (
+                        <Badge variant="destructive" className="ml-2">Vencida</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium truncate max-w-[250px]" title={entry.titulo}>
+                        {entry.titulo}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 truncate max-w-[250px]" title={entry.descripcion}>
+                        {entry.descripcion}
+                      </div>
+                    </TableCell>
+                    <TableCell className="truncate max-w-[180px]" title={entry.responsable}>
+                      {entry.responsable}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getCategoryBadge(entry.categoria)}>{getCategoryLabel(entry.categoria)}</Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {renderEstado(entry)}
+                    </TableCell>
                   {!isGuest && (
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -345,7 +354,8 @@ export default function BitacoraTable({
                     </TableCell>
                   )}
                 </TableRow>
-              ))
+              )
+            })
             )}
           </TableBody>
         </Table>

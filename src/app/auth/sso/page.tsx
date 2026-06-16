@@ -1,10 +1,16 @@
 "use client"
 
-import { Suspense } from "react"
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "../../../contexts/AuthContext"
-import type { User } from "../../../types/auth"
+import type { User, UserRole } from "../../../types/auth"
+import { isMultiAreaInput, resolveArea } from "../../../lib/area"
+
+function parseAreaFromPath(path: string): string | null {
+  const queryIndex = path.indexOf("?")
+  if (queryIndex === -1) return null
+  return new URLSearchParams(path.slice(queryIndex + 1)).get("area")
+}
 
 function SSOHandler() {
   const router = useRouter()
@@ -31,18 +37,27 @@ function SSOHandler() {
           return
         }
 
+        const rawArea = data.area as string | undefined
+        const multiArea = isMultiAreaInput(rawArea) || data.role === "superadmin"
+        const redirectRaw = searchParams.get("redirect") ?? "/"
+        const redirect = decodeURIComponent(redirectRaw)
+        const redirectArea = parseAreaFromPath(redirect)
+        const urlArea = redirectArea ?? searchParams.get("area")
+        const resolvedArea = multiArea
+          ? resolveArea(urlArea, "cultura")
+          : resolveArea(rawArea, "cultura", urlArea)
+
         const user: User = {
           id: data.uid,
           nombre: data.nombre,
           cedula: data.cedula,
-          role: data.role,
-          area: data.area ?? "cultura",
+          role: data.role as UserRole,
+          area: resolvedArea,
           fechaCreacion: new Date(),
         }
 
-        login(user)
-        const redirect = searchParams.get("redirect") ?? "/"
-        router.replace(redirect)
+        login(user, { multiArea, urlArea })
+        router.replace(redirect.split("?")[0] || "/")
       })
       .catch(() => setError("Error al verificar el acceso."))
   }, [searchParams, login, router])

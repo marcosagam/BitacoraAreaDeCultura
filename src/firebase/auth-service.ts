@@ -2,20 +2,21 @@ import { collection, addDoc, getDocs, query, where, Timestamp, updateDoc, delete
 import { toast } from "sonner"
 import { culturaDb, deporteDb } from "./config"
 import type { User, Area } from "../types/auth"
+import { areaFromSource } from "../lib/area"
 import { SUPER_ADMIN_CREDENTIALS } from "../constants/superadmin"
 
 const COLLECTION_NAME = "admins"
 
 // Convertir datos de Firestore a User
-const convertFromFirestore = (docSnap: any): User => {
+const convertFromFirestore = (docSnap: { id: string; data: () => Record<string, unknown> }, sourceArea: Area): User => {
   const data = docSnap.data()
   return {
     id: docSnap.id,
-    nombre: data.nombre,
-    cedula: data.cedula,
+    nombre: data.nombre as string,
+    cedula: data.cedula as string,
     role: "admin",
-    area: (data.area as Area) ?? "cultura",
-    fechaCreacion: data.fechaCreacion.toDate(),
+    area: areaFromSource(sourceArea, data.area),
+    fechaCreacion: (data.fechaCreacion as Timestamp).toDate(),
   }
 }
 
@@ -35,7 +36,7 @@ export const login = async (cedula: string, password: string): Promise<User | nu
     }
 
     // Buscar en cultura primero, luego en deporte
-    for (const { db, area } of [
+    for (const { db, area: sourceArea } of [
       { db: culturaDb, area: "cultura" as Area },
       { db: deporteDb, area: "deporte" as Area },
     ]) {
@@ -46,8 +47,7 @@ export const login = async (cedula: string, password: string): Promise<User | nu
       )
       const snap = await getDocs(q)
       if (!snap.empty) {
-        const user = convertFromFirestore(snap.docs[0])
-        // Usar el área guardada en el documento (tiene precedencia sobre la DB donde se encontró)
+        const user = convertFromFirestore(snap.docs[0], sourceArea)
         toast.success(`Bienvenido ${user.nombre}`)
         return user
       }
@@ -106,8 +106,8 @@ export const getAllAdmins = async (): Promise<User[]> => {
       getDocs(collection(deporteDb, COLLECTION_NAME)),
     ])
     return [
-      ...culturaSnap.docs.map(convertFromFirestore),
-      ...deporteSnap.docs.map(convertFromFirestore),
+      ...culturaSnap.docs.map((docSnap) => convertFromFirestore(docSnap, "cultura")),
+      ...deporteSnap.docs.map((docSnap) => convertFromFirestore(docSnap, "deporte")),
     ]
   } catch (error) {
     console.error("Error al obtener admins:", error)

@@ -6,6 +6,7 @@ import { Button } from "./ui/button"
 import { LogIn, LogOut, Shield, Settings } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import LoginDialog from "./login-dialog"
+import AreaSwitcher from "./area-switcher"
 
 export default function AppHeader() {
   const router = useRouter()
@@ -26,6 +27,8 @@ export default function AppHeader() {
           </div>
 
           <div className="flex items-center gap-2">
+            <AreaSwitcher />
+
             {!isAuthenticated ? (
               <Button onClick={() => setLoginOpen(true)} variant="default">
                 <LogIn className="mr-2 h-4 w-4" />

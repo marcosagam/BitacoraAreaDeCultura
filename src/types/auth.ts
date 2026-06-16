@@ -15,4 +15,5 @@ export interface AuthState {
   isAuthenticated: boolean
   role: UserRole
   area: Area
+  multiArea: boolean
 }

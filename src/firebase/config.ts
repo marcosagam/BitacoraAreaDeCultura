@@ -1,7 +1,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getFirestore, type Firestore } from "firebase/firestore"
+import type { Area } from "../types/auth"
+import { resolveArea } from "../lib/area"
 
-export type Area = "cultura" | "deporte"
+export type { Area }
 
 // Cultura (proyecto original)
 const culturaConfig = {
@@ -38,7 +40,7 @@ export const deporteDb = getFirestore(deporteApp)
 // Compatibilidad: db apunta a cultura por defecto
 export const db = culturaDb
 
-export function getDbForArea(area: Area): Firestore {
-  return area === "deporte" ? deporteDb : culturaDb
+export function getDbForArea(area: Area | string | undefined): Firestore {
+  return resolveArea(area) === "deporte" ? deporteDb : culturaDb
 }
 
